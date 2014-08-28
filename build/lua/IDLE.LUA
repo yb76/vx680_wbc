@@ -1,3 +1,9 @@
+ScrnTimeout = 30000
+ScrnErrTimeout = 10000
+ScrnTimeoutZO = 0
+ScrnTimeoutTN = 10000
+ScrnTimeoutTHR = 3000
+ScrnTimeoutHF = 500
 --
 package.path = "?.lua;I:?.lua"
 
@@ -26,13 +32,12 @@ function do_obj_idle()
   local charging,batt = terminal.GetBattery()
 
   if idlescrlines == nil then
-    scrlines = scrlines .."BATTERY,,0,-2,32,;"
-    scrlines = scrlines .."TIMEDISP,,0,-1,0;"
-	scrlines = scrlines .."BUTTONL_1,THIS,SALE,8,C;" 
-	scrlines = scrlines .."BUTTONL_2,THIS,MENU,11,C;"
-	scrlines = scrlines .."BITMAP,THIS,gmcabs_color.bmp,P60,P0;"
-    scrlines = scrlines .."SIGNAL,,0,-2,0;"
-    idlescrlines = scrlines
+    idlescrlines = "BATTERY,,0,-2,32,;"
+    .."TIMEDISP,,0,-1,0;"
+	.."BUTTONL_1,THIS,SALE,8,C;" 
+	.."BUTTONL_2,THIS,MENU,11,C;"
+	.."BITMAP,THIS,gmcabs_color.bmp,P60,P0;"
+    .."SIGNAL,,0,-2,0;"
   end
   
   local topright = ( config.safsign or "") .. ( config.logok  and "" or "L" )
@@ -43,7 +48,6 @@ function do_obj_idle()
     local scrlines_batt = "BITMAP,THIS,please_recharge.bmp,P180,P20;"
 	idlescrlines_safsign = string.gsub(idlescrlines_safsign,scrlines_sale,scrlines_batt)
   end
-
 
   local screvent,_ = terminal.DisplayObject(idlescrlines_safsign,scrkeys,screvents,scrtimeout)
   idletimeout = 10000
@@ -130,17 +134,6 @@ function init_config()
   KEY.CNCL = 0x800
   KEY.CLR  = 0x1000
   KEY.OK   = 0x2000
-  KEY.ALPHA= 0x4000
-  KEY.SK1  = 0x8000
-  KEY.SK2  = 0x10000
-  KEY.SK3  = 0x20000
-  KEY.SK4  = 0x40000
-  KEY.F0   = 0x80000
-  KEY.F1   = 0x100000
-  KEY.F2   = 0x200000
-  KEY.F3   = 0x400000
-  KEY.F4   = 0x800000
-  KEY.F5   = 0x1000000
   KEY.ASTERISK = 0x2000000
   KEY.LCLR = 0x4000000
   KEY.NO_PIN = 0x8000000
@@ -161,7 +154,6 @@ function init_config()
   config.merch_loc1 = (config.merch_loc1 ~="" and config.merch_loc1 or "MASCOT        NSW AU")
   config.logok = false
 
-  config.tipenabled = (terminal.GetJsonValue("CONFIG","TIPS") == "YES" and true or nil)
   local manualentry = terminal.GetJsonValue("CONFIG","MANUALENTRY")
   if manualentry == "YES" then config.manualentry = true else config.manualentry = false end
   config.hostsettle,config.autosettle,config.settledate = terminal.GetJsonValue("CONFIG","HOSTSETTLE","AUTOSETTLE","SETTLEDATE")

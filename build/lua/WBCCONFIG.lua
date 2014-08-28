@@ -214,21 +214,19 @@ end
 
 function batch_update()
   local batchno = terminal.GetJsonValue("iTAXI_CFG","BATCH")
-  if batch~="" then
-    local scrlines = "LARGE,THIS,UPDATE BATCH NO?,2,C;".."LARGE,,73,4,C;"
-    local screvent = terminal.DisplayObject(scrlines,KEY.CNCL+KEY.CLR+KEY.OK,EVT.TIMEOUT,30000)
-    if screvent ~= "KEY_OK" then return 0 end 
-    local upmsg = "{TYPE:DATA,GROUP:iTAXI,NAME:iTAXI_CFG_INIT,TID:"..config.tid..",BATCH:"..batchno.."}"
-    terminal.UploadMsg(upmsg)
-    local ver = terminal.GetJsonValue("iTAXI_CFG","VERSION")
-    upmsg = "{TYPE:DATA,GROUP:iTAXI,NAME:iTAXI_CFG,VERSION:"..ver.."}"
-    terminal.UploadMsg(upmsg)
-    scrlines = "LARGE,,27,2,C;" .."LARGE,,26,3,C;"
-    terminal.DisplayObject(scrlines,0,0,0)
-    batchno = terminal.GetJsonValue("iTAXI_CFG","BATCH")
-    terminal.Remote()
-    scrlines = "LARGE,THIS,NEW BATCH:"..batchno..",3,C;".."LARGE,THIS,PLEASE RESTART,4,C;"
-    terminal.DisplayObject(scrlines,KEY.CNCL+KEY.CLR+KEY.OK,EVT.TIMEOUT,30000)
-  end
+  local scrlines = "LARGE,THIS,UPDATE BATCH NO?,2,C;".."LARGE,,73,4,C;"
+  local screvent = terminal.DisplayObject(scrlines,KEY.CNCL+KEY.CLR+KEY.OK,EVT.TIMEOUT,30000)
+  if screvent ~= "KEY_OK" then return 0 end 
+  local upmsg = "{TYPE:DATA,GROUP:iTAXI,NAME:iTAXI_CFG_INIT,TID:"..config.tid..",BATCH:"..batchno.."}"
+  terminal.UploadMsg(upmsg)
+  local ver = terminal.GetJsonValue("iTAXI_CFG","VERSION")
+  upmsg = "{TYPE:DATA,GROUP:iTAXI,NAME:iTAXI_CFG,VERSION:"..ver.."}"
+  terminal.UploadMsg(upmsg)
+  scrlines = "LARGE,,27,2,C;" .."LARGE,,26,3,C;"
+  terminal.DisplayObject(scrlines,0,0,0)
+  batchno = terminal.GetJsonValue("iTAXI_CFG","BATCH")
+  terminal.Remote()
+  scrlines = "LARGE,THIS,NEW BATCH:"..batchno..",3,C;".."LARGE,THIS,PLEASE RESTART,4,C;"
+  terminal.DisplayObject(scrlines,KEY.CNCL+KEY.CLR+KEY.OK,EVT.TIMEOUT,30000)
   return 0
 end

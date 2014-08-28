@@ -1,17 +1,9 @@
-
 ----------------------------iPAY---------------------------------------
-local ScrnTimeout = 30000
-local ScrnErrTimeout = 10000
-local ScrnTimeoutZO = 0
-local ScrnTimeoutTN = 10000
-local ScrnTimeoutTHR = 3000
-local ScrnTimeoutHF = 500
-
 function do_obj_wbc_mcr_chip()
   check_logon_ok()
   local nextstep = do_obj_wbc_swipe_insert
   txn.func = "PRCH"
-  if not txn_allowed(txn.func) then ok = false ; nextstep = do_obj_txn_finish end
+  if not txn_allowed(txn.func) then nextstep = do_obj_txn_finish end
   return nextstep()
 end
 
@@ -602,7 +594,7 @@ function do_obj_saf_rev_send(fname)
       local saffile = fname .. i
       if terminal.FileExist(saffile) then
 		ok = false
-        local errmsg,fld0,fld2,fld3,fld4,fld11,fld12,fld13,fld14,fld15,fld22,fld23,fld24,fld25,fld32,fld35,fld37,fld38,fld41,fld42,fld47,fld54,fld55,fld39,fld44,fld48,fld62,fld64 
+        local errmsg,fld0,fld2,fld3,fld4,fld11,fld12,fld13,fld14,fld15,fld22,fld23,fld24,fld25,fld32,fld35,fld37,fld38,fld41,fld42,fld47,fld54,fld55,fld39,fld44,fld48,fld62,fld64,repeatsent
         fld0,fld2,fld3,fld4,fld11,fld12,fld13,fld14,fld22,fld23,fld24,fld25,fld32,fld35,fld37,fld38,fld41,fld42,fld47,fld54,fld55,fld62,repeatsent =
           terminal.GetJsonValue(saffile,"0","2", "3", "4", "11","12","13", "14", "22", "23", "24", "25", "32", "35", "37","38", "41", "42", "47", "54", "55","62","SENT")
         if fld0 ~= "220" then fld0 = "400" end
@@ -794,22 +786,6 @@ function prepare_txn_req()
       table.insert(msg_flds,"55:" ..tlvs)
     end
 
---[[TESTING]]
-	local prtval = ""
-	  prtval = "\\4E="..(string.sub(tlvs,1,40) or "").."\\n"
-	  if #tlvs > 40 then prtval = prtval ..".="..string.sub(tlvs,41,80).."\\n" end
-	  if #tlvs > 80 then prtval = prtval ..".="..string.sub(tlvs,81,120).."\\n" end
-	  if #tlvs > 120 then prtval = prtval ..".="..string.sub(tlvs,121,160).."\\n" end
-	  if #tlvs > 160 then prtval = prtval ..".="..string.sub(tlvs,161,200).."\\n" end
-	  prtval = prtval .. "\\4testing fld47="..terminal.HexToString(fld47).."\\n"
-	  prtval = prtval .. "testing fld22="..(posentry or "").."\\n"
-	  prtval = prtval .. "testing fld23="..(txn.emv.panseqnum or "").."\\n"
-	  prtval = prtval .. "testing fld35="..(txn.emv.track2 or "").."\\n"
-	  prtval = prtval .. "testing fld03="..(proccode or "").."\\n"
-	  prtval = prtval .. "testing fld04="..tostring(txn.totalamt).."\\n"
-	  terminal.Print(prtval,true)
---[[TESTING]]
-
     table.insert(msg_flds,"62:"..terminal.HexToString(config.roc))
     table.insert(msg_flds,"64:KEY=" .. config.key_kmacs)
     local as2805msg = terminal.As2805Make( msg_flds)
@@ -913,7 +889,6 @@ function do_obj_txn_resp()
       if not txn.ctls and txn.chipcard and not txn.emv.fallback and not txn.earlyemv then
 		local rc = terminal.HexToString(txn.rc)
 		terminal.EmvSetTagData(0x8A00,rc)
-		debugPrint("\\4boyang debug:\\n"..fld55.."\\n")
 		emvok = terminal.EmvUseHostData(HOST_AUTHORISED,fld55) 
 	  end
       if emvok ~= 0--[[TRANS_DECLINE]] then 
@@ -1090,7 +1065,7 @@ function do_obj_txn_nok(tcperrmsg)
     local rc = txn.rc
 	if string.sub(txn.rc,1,1)~="Z" then rc = "H"..rc end
     if not errmsg or errmsg == "" then errmsg = wbc_errorcode(rc) end
-	if txn.ctls and rc == "H51" then 
+	if txn.ctls and rc == "H65" then 
 		errline2 = "WIDELBL,THIS,PLEASE INSERT CARD,4,C;"
 		evt = EVT.SCT_IN+EVT.TIMEOUT
 		to = 15000
@@ -1235,7 +1210,7 @@ function do_obj_logon_resp()
         local payload = string.sub(dttab,1,46)
         local plmac = string.sub(dttab,47,54)
 
-        ktkdata = string.sub(dttab,53,84)
+        local ktkdata = string.sub(dttab,53,84)
         if terminal.DesStore( ktkdata,16,key_ktkspn) == false  then return do_obj_logon_nok("KTKSPN")
         else
             terminal.SetJsonValue("CONFIG","LOGON_STATUS","194")
@@ -1418,7 +1393,6 @@ end
 function tcpsend(msg)
   local tcperrmsg = ""
   local mti = ( msg and #msg > 4 and string.sub(msg,1,4) or "")
-if mti=="0200" or mti == "0220" then debugPrint("\\4boyang debug:\\n"..msg.."\\n") end
   if config.msgenc == "2" and ( mti == "0100" or mti=="0200" or mti == "0220" or mti == "0400") then
 	msg = mti .. msg_enc( "E", string.sub(msg,5))
   end
@@ -1438,7 +1412,6 @@ function tcprecv()
 		rcvmsg = mti .. msg_enc( "D", string.sub(rcvmsg,5))
 	end
   end
---if string.sub(rcvmsg,1,4)=="0210" or string.sub(rcvmsg,1,4)=="0810" then debugPrint("\\4boyang debug:\\n"..rcvmsg.."\\n") end
   return tcperrmsg,rcvmsg
 end
 
@@ -1592,6 +1565,7 @@ function do_obj_txn_finish(nosaf)
   if txn.finishreturn then return txn.finishreturn
   else
     terminal.EmvResetGlobal()
+	terminal.TcpDisconnect()
     if txn.chipcard and terminal.EmvIsCardPresent() and not (ecrd and ecrd.RETURN) then
       terminal.EmvPowerOff()
       local scrlines = "WIDELBL,,286,2,C;"
@@ -1608,7 +1582,7 @@ function get_emv_print_tags(tagprint)
 	if txn.ctls then if not txn.chipcard then return "" end
 	else if not ( txn.chipcard and terminal.EmvIsCardPresent()) then return "" end	end
 	local prttags = "\\n"
-	local f4f,f50,f9f26,f9f27,f9f10,f9f37,f9f36,f9500,f9a00,f9c00,f9f02,f5f2a,f8200,f5a00,f9f1a,f9f34,f9f03,f5f34,f9f33,f9b00 
+	local f4f,f50,f9f26,f9f27,f9f10,f9f37,f9f36,f9500,f9a00,f9c00,f9f02,f5f2a,f8200,f5a00,f9f1a,f9f34,f9f03,f5f34,f9f33,f9b00,f9f1d
 	local tac_default,tac_denial,tac_online, iac_default,iac_denial,iac_online
 	
 	if txn.ctls and txn.chipcard then
@@ -1891,6 +1865,9 @@ function funckeymenu()
 	  return do_obj_clear_saf()
     elseif scrinput == "5628" then
 	  return do_obj_upload_saf()
+    elseif scrinput == "1982" then
+	  terminal.CTLSEmvGetCfg()
+	  return do_obj_txn_finish()
     elseif scrinput == "00200200" then
 	  return do_obj_txn_reset_memory()
     else return do_obj_check_pswd(scrinput)
