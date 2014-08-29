@@ -2,7 +2,7 @@ function do_obj_emv_error(emvstat)
   local scrlines,linestr="",""
   local gemv_techfallback = terminal.EmvGlobal("GET","TECHFALLBACK")
   gemv_techfallback = gemv_techfallback and config.fallback
-  if emvstat == 146 and gemv_techfallback then gemv_techfallback = false end
+  --if emvstat == 146 and gemv_techfallback then gemv_techfallback = false end
   local screvents = EVT.TIMEOUT
   local scrkeys = KEY.OK+KEY.CNCL
 
@@ -19,6 +19,7 @@ function do_obj_emv_error(emvstat)
   if emvstat == 157 then scrlines = "WIDELBL,THIS,NO ATR,2,C;" ..linestr
   elseif emvstat==101 then scrlines="WIDELBL,,277,2,C;"..linestr
   elseif emvstat==103 then scrlines="WIDELBL,,283,2,C;"..linestr
+  elseif emvstat==104 then scrlines="WIDELBL,,275,2,C;"..linestr
   elseif emvstat==106 then scrlines="WIDELBL,,282,2,C;"..linestr
   elseif emvstat==107 then scrlines="WIDELBL,,276,2,C;"..linestr
   elseif emvstat==108 then scrlines="WIDELBL,,281,2,C;"..linestr

@@ -1,5 +1,5 @@
 function do_obj_account()
-  if txn.emverr and txn.emverr == 146 then txn.chipcard = nil ; txn.emv.fallback = false; txn.emv = {} end
+  --if txn.emverr and txn.emverr == 146 then txn.chipcard = nil ; txn.emv.fallback = false; txn.emv = {} end
   local acc4 = "CHQ"
   local acc5 = "SAV"
   local acc6 = "CR"
