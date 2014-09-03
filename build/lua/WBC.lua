@@ -1589,7 +1589,7 @@ function get_emv_print_tags(tagprint)
 	if txn.ctls and txn.chipcard then
 			local f9f06 = get_value_from_tlvs("9F06")
 			f4f = get_value_from_tlvs("8400")
-			if f4f=="" then f4f = f9f06 end
+			if f4f=="" and f9f06~="" then f4f = f9f06 end
 			f50 = get_value_from_tlvs("5000")
 			f9f26 = get_value_from_tlvs("9F26")
 			f9f27 = get_value_from_tlvs("9F27")
@@ -1610,7 +1610,7 @@ function get_emv_print_tags(tagprint)
 			f9f33 = get_value_from_tlvs("9F33")
 			f9b00 = get_value_from_tlvs("9B00")
 
-			tac_default,tac_denial,tac_online= terminal.CTLSEmvGetTac(f9f06)
+			tac_default,tac_denial,tac_online= terminal.CTLSEmvGetTac(f4f)
 
 			iac_default = get_value_from_tlvs("9F0D")
 			iac_denial = get_value_from_tlvs("9F0E")
@@ -1669,8 +1669,8 @@ function get_ipay_print_nok(who,result_str)
   elseif txn.chipcard and not txn.emv.fallback and not txn.earlyemv then
 	local pds4f,pds50,pds9f26,pds9f12 
 	if txn.ctls then
-		pds4f,pds50,pds9f26,pds9f12 = get_value_from_tlvs("8400"),get_value_from_tlvs("5000"),get_value_from_tlvs("9F26"),get_value_from_tlvs("9F12")
-		if (not pds4f or pds4f == "") then pds4f = get_value_from_tlvs("9F06") end
+		pds4f,pds50,pds9f26,pds9f12 = get_value_from_tlvs("9F06"),get_value_from_tlvs("5000"),get_value_from_tlvs("9F26"),get_value_from_tlvs("9F12")
+		if pds4f == "" then pds4f = get_value_from_tlvs("8400") end
 	else
 		pds4f,pds50,pds9f26,pds9f12 = terminal.EmvGetTagData(0x4F00,0x5000,0x9F26,0x9F12)
 	end
@@ -1750,8 +1750,8 @@ function get_ipay_print(who,result_ok,result_str)
 	if txn.chipcard and not txn.emv.fallback and not txn.earlyemv then
 		local pds4f,pds50,pds9f26,pds9f12 
 		if txn.ctls then
-		  pds4f,pds50,pds9f26,pds9f12 = get_value_from_tlvs("8400"),get_value_from_tlvs("5000"),get_value_from_tlvs("9F26"),get_value_from_tlvs("9F12")
-		  if (not pds4f or pds4f == "") then pds4f = get_value_from_tlvs("9F06") end
+		  pds4f,pds50,pds9f26,pds9f12 = get_value_from_tlvs("9F06"),get_value_from_tlvs("5000"),get_value_from_tlvs("9F26"),get_value_from_tlvs("9F12")
+		  if pds4f == "" then pds4f = get_value_from_tlvs("8400") end
 		else
 		  pds4f,pds50,pds9f26,pds9f12 = terminal.EmvGetTagData(0x4F00,0x5000,0x9F26,0x9F12)
 		end
@@ -1866,7 +1866,7 @@ function funckeymenu()
 	  return do_obj_clear_saf()
     elseif scrinput == "5628" then
 	  return do_obj_upload_saf()
-    elseif scrinput == "1982" then
+    elseif scrinput == "3701" then
 	  terminal.CTLSEmvGetCfg()
 	  return do_obj_txn_finish()
     elseif scrinput == "00200200" then

@@ -18,8 +18,7 @@ function do_obj_iecr_end(rtnvalue)
     ecrd.MID=config.mid
     ecrd.AMT=txn.totalamt
     ecrd.INV=config.roc
-    if txn.cashamt>0 then 
-	.CASH=txn.cashamt end
+    if txn.cashamt>0 then ecash.CASH=txn.cashamt end
 
     ecrd.CARDTYPE = txn.cardname
     ecrd.CARDNO = txn.cardname .." " .. string.len(txn.fullpan) .. " " .. string.sub(txn.fullpan,-4)

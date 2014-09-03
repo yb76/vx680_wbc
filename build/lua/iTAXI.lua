@@ -796,7 +796,6 @@ function do_obj_itaxi_retotal(fileno)
     end
 end
 
-
 function do_obj_itaxi_totals()
   local header,trailer = "","\\n\\4\\W\\iINV No.\\RFARE\\n\\4\\W"
   local taxi_min,taxi_next= terminal.GetArrayRange("TAXI")

@@ -31,8 +31,8 @@ function get_ipay_print(who,result_ok,result_str)
 	if txn.chipcard and not txn.emv.fallback and not txn.earlyemv then
 		local pds4f,pds50,pds9f26,pds9f12 
 		if txn.ctls then
-		  pds4f,pds50,pds9f26,pds9f12 = get_value_from_tlvs("8400"),get_value_from_tlvs("5000"),get_value_from_tlvs("9F26"),get_value_from_tlvs("9F12")
-		  if (not pds4f or pds4f == "") then pds4f = get_value_from_tlvs("9F06") end
+		  pds4f,pds50,pds9f26,pds9f12 = get_value_from_tlvs("9F06"),get_value_from_tlvs("5000"),get_value_from_tlvs("9F26"),get_value_from_tlvs("9F12")
+		  if pds4f == "" then pds4f = get_value_from_tlvs("8400") end
 		else
 		  pds4f,pds50,pds9f26,pds9f12 = terminal.EmvGetTagData(0x4F00,0x5000,0x9F26,0x9F12)
 		end

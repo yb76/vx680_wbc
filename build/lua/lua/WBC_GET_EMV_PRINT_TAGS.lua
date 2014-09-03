@@ -8,7 +8,7 @@ function get_emv_print_tags(tagprint)
 	if txn.ctls and txn.chipcard then
 			local f9f06 = get_value_from_tlvs("9F06")
 			f4f = get_value_from_tlvs("8400")
-			if f4f=="" then f4f = f9f06 end
+			if f4f=="" and f9f06~="" then f4f = f9f06 end
 			f50 = get_value_from_tlvs("5000")
 			f9f26 = get_value_from_tlvs("9F26")
 			f9f27 = get_value_from_tlvs("9F27")
@@ -29,7 +29,7 @@ function get_emv_print_tags(tagprint)
 			f9f33 = get_value_from_tlvs("9F33")
 			f9b00 = get_value_from_tlvs("9B00")
 
-			tac_default,tac_denial,tac_online= terminal.CTLSEmvGetTac(f9f06)
+			tac_default,tac_denial,tac_online= terminal.CTLSEmvGetTac(f4f)
 
 			iac_default = get_value_from_tlvs("9F0D")
 			iac_denial = get_value_from_tlvs("9F0E")

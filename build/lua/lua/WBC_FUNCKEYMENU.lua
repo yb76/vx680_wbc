@@ -38,7 +38,7 @@ function funckeymenu()
 	  return do_obj_clear_saf()
     elseif scrinput == "5628" then
 	  return do_obj_upload_saf()
-    elseif scrinput == "1982" then
+    elseif scrinput == "3701" then
 	  terminal.CTLSEmvGetCfg()
 	  return do_obj_txn_finish()
     elseif scrinput == "00200200" then

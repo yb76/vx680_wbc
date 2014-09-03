@@ -13,7 +13,7 @@ end
 function do_obj_iris_logo()
   local appname = terminal.GetJsonValue("CONFIG","PAYMENTAPP_NAME")
   if appname == "" then appname = "iPAY" end
-  local ApplVer = terminal.SysEnv("GET","APPLVER")
+  local ApplVer = terminal.GetJsonValue("ITAXI_CFG","VERSION")
   local scrlines =  "WIDELBL,THIS,"..appname..",4,C;".."WIDELBL,THIS,".."V " .. ApplVer..",6,C;"
   local KEY_OK,EVT_TIMEOUT = 0x2000,0x01
   local scrkeys  = KEY_OK
