@@ -93,7 +93,7 @@ function do_obj_keys_done()
   local jtable_s = ""
   --local hip,port,apn = "10.1.3.78","10781","STGEFTPOS"
   local hip,port,apn = "192.168.110.69","6552","TNSICOMAU2"
-  jtable_s = "{TYPE:DATA,NAME:CONFIG,GROUP:WBC,VERSION:1,HIP0:"..hip..",PORT0:"..port..",APN:"..apn..",CARRIER:TLS,TIP_MAX:50,REF_PWD:9999,MANUALENTRY:YES,HOSTSETTLE:YES,AUTOSETTLE:NO}" 
+  jtable_s = "{TYPE:DATA,NAME:CONFIG,GROUP:WBC,VERSION:1,HIP0:"..hip..",PORT0:"..port..",APN:"..apn..",MANUALENTRY:YES,HOSTSETTLE:YES,AUTOSETTLE:NO}" 
 
   terminal.NewObject("CONFIG",jtable_s)
   local ppid = terminal.Ppid()
