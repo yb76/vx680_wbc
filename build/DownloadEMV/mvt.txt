@@ -46,7 +46,7 @@ data MVT
  -1,                   /* "Scheme Reference" */
  -1,                   /* "Issuer Reference" */
   1,                   /* "TRM Data Present" */
-  0,                   /* "Floor Limit"      */
+  20000,                   /* "Floor Limit"      */
   0,                   /* "RS Threshold"     */
   1,                   /* "Target RS %"      */
   1,                   /* "Max Target RS %"  */
@@ -83,7 +83,7 @@ data MVT
  -1,                   /* "Scheme Reference" */
  -1,                   /* "Issuer Reference" */
   1,                   /* "TRM Data Present" */
-  12500,                 /* "Floor Limit"      */
+  6000,                 /* "Floor Limit"      */
   0,                   /* "RS Threshold"     */
   1,                   /* "Target RS %"      */
   1,                   /* "Max Target RS %"  */

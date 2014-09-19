@@ -26,7 +26,6 @@ function emv_init()
 	local amt,acctype = ecrd.AMT,0
     if ok == 0 then ok = terminal.EmvSelectApplication(amt,acctype) end
 	if not config.ehub then config.ehub = terminal.GetJsonValue("CONFIG","EHUB") end
-	config.ehub = "YES" -- boyang
 	if ok == 0 then
 		local tag_aid = string.upper(terminal.EmvGetTagData(0x4F00))
 		local eftpos = (tag_aid and string.sub(tag_aid,1,10) == "A000000384") 
@@ -1583,7 +1582,7 @@ function get_emv_print_tags(tagprint)
 	if txn.ctls then if not txn.chipcard then return "" end
 	else if not ( txn.chipcard and terminal.EmvIsCardPresent()) then return "" end	end
 	local prttags = "\\n"
-	local f4f,f50,f9f26,f9f27,f9f10,f9f37,f9f36,f9500,f9a00,f9c00,f9f02,f5f2a,f8200,f5a00,f9f1a,f9f34,f9f03,f5f34,f9f33,f9b00,f9f1d
+	local f4f,f50,f9f26,f9f27,f9f10,f9f37,f9f36,f9500,f9a00,f9c00,f9f02,f5f2a,f8200,f5a00,f9f1a,f9f34,f9f03,f5f34,f9f33,f9b00,f9f1d,f9f1b
 	local tac_default,tac_denial,tac_online, iac_default,iac_denial,iac_online
 	
 	if txn.ctls and txn.chipcard then
@@ -1617,8 +1616,8 @@ function get_emv_print_tags(tagprint)
 			iac_online = get_value_from_tlvs("9F0F")
 
 	else
-		f4f,f50,f9f26,f9f27,f9f10,f9f37,f9f36,f9500,f9a00,f9c00,f9f02,f5f2a,f8200,f5a00,f9f1a,f9f34,f9f03,f5f34,f9f33,f9b00,f9f1d =
-			terminal.EmvGetTagData(0x4F00,0x5000,0x9F26,0x9F27,0x9F10,0x9F37,0x9F36,0x9500,0x9A00,0x9C00,0x9F02,0x5F2A,0x8200,0x5A00,0x9F1A,0x9F34,0x9F03,0x5F34,0x9F33,0x9B00,0x9F1D) 
+		f4f,f50,f9f26,f9f27,f9f10,f9f37,f9f36,f9500,f9a00,f9c00,f9f02,f5f2a,f8200,f5a00,f9f1a,f9f34,f9f03,f5f34,f9f33,f9b00,f9f1d,f9f1b =
+			terminal.EmvGetTagData(0x4F00,0x5000,0x9F26,0x9F27,0x9F10,0x9F37,0x9F36,0x9500,0x9A00,0x9C00,0x9F02,0x5F2A,0x8200,0x5A00,0x9F1A,0x9F34,0x9F03,0x5F34,0x9F33,0x9B00,0x9F1D,0x9F1B) 
 		tac_default,tac_denial,tac_online, iac_default,iac_denial,iac_online = terminal.EmvGetTacIac()
 	end
 
@@ -1644,6 +1643,7 @@ function get_emv_print_tags(tagprint)
 	prttags = prttags.."CVMR:\\R".. f9f34.."\\n"
 	prttags = prttags.."OthAmt:\\R".. string.format("$%.2f",i9f03/100).."\\n"
 	prttags = prttags.."PANSeq:\\R".. f5f34.."\\n"
+	prttags = prttags.."FloorLmt:\\R".. (f9f1b or " ").."\\n"
 	prttags = prttags.."    Issuer     Terminal\\n"
 	prttags = prttags.."Dn "..iac_denial.." "..(tac_denial or "").."\\n"
 	prttags = prttags.."On "..iac_online.." "..(tac_online or "").."\\n"

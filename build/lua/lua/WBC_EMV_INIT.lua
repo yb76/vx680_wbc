@@ -5,7 +5,6 @@ function emv_init()
 	local amt,acctype = ecrd.AMT,0
     if ok == 0 then ok = terminal.EmvSelectApplication(amt,acctype) end
 	if not config.ehub then config.ehub = terminal.GetJsonValue("CONFIG","EHUB") end
-	config.ehub = "YES" -- boyang
 	if ok == 0 then
 		local tag_aid = string.upper(terminal.EmvGetTagData(0x4F00))
 		local eftpos = (tag_aid and string.sub(tag_aid,1,10) == "A000000384") 
