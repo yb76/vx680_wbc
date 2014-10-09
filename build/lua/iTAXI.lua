@@ -270,7 +270,8 @@ function ctls_tran()
         if taxicfg.ctls_slimit > 0 and amt > taxicfg.ctls_slimit then tr2 = ""; emvres = "-1025"; end
     elseif tlvs ~= "" then
 		-- limit check is done in f700 ctlsemvcfg.txt
-        --local aid = get_value_from_tlvs("9F06",tlvs)
+        local aid = get_value_from_tlvs("9F06",tlvs)
+		if string.sub(tag_aid,1,10) == "A000000384" and config.ehub == "YES" then
         --translimit,cvmlimit =terminal.CTLSEmvGetLimit(aid) --boyang
         --if string.sub(aid,1,10)=="A000000003" and amt >= translimit or amt > translimit then tlvs = ""; emvres = "-1025" end --TESTING --boyang
        taxi.cvmlimit = cvmlimit

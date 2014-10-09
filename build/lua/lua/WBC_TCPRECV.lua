@@ -1,7 +1,6 @@
 function tcprecv()
   local rcvmsg,tcperrmsg ="",""
-  local chartimeout,timeout = "2000","25"
-  tcperrmsg,rcvmsg = terminal.TcpRecv(chartimeout,timeout)
+  tcperrmsg,rcvmsg = terminal.TcpRecv("2000",config.tcptimeout)
   
   if tcperrmsg == "NOERROR" and #rcvmsg > 4 and config.msgenc == "2" then
     local mti = string.sub(rcvmsg,1,4)

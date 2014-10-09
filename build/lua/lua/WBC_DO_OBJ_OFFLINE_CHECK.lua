@@ -1,5 +1,6 @@
 function do_obj_offline_check(revrequired)
 	local FAILED_TO_CONNECT = 3
+			  terminal.DebugDisp("boyang tvr before offline check= "..(terminal.EmvGetTagData(0x9500)))
 	local ret = config.no_offline and -1 or terminal.EmvUseHostData(FAILED_TO_CONNECT,"")
 	if ret == 0 then 
 		txn.rc = "Y3"

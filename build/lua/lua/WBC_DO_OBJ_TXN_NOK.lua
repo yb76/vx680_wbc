@@ -1,4 +1,5 @@
 function do_obj_txn_nok(tcperrmsg)
+  local nextstep = nil
   if true or txn.rc == "Z1" or txn.rc == "Z3" or txn.rc == "Z4" then --TESTING
 	txn.emvprint = get_emv_print_tags()
   end
@@ -9,7 +10,11 @@ function do_obj_txn_nok(tcperrmsg)
     local rc = txn.rc
 	if string.sub(txn.rc,1,1)~="Z" then rc = "H"..rc end
     if not errmsg or errmsg == "" then errmsg = wbc_errorcode(rc) end
-	if txn.ctls and rc == "H65" then 
+	if rc == "H55" and not txn.re_pin then
+		to = 1000
+		txn.re_pin = 1
+		nextstep = do_obj_pin --( txn.apps and txn.apps > 0 and do_obj_wbc_swipe_insert or do_obj_pin)
+	elseif txn.ctls and rc == "H65" then 
 		errline2 = "WIDELBL,THIS,PLEASE INSERT CARD,4,C;"
 		evt = EVT.SCT_IN+EVT.TIMEOUT
 		to = 15000
@@ -23,7 +28,10 @@ function do_obj_txn_nok(tcperrmsg)
   scrlines = scrlines.. "WIDELBL,THIS," .. (errmsg or "") ..",3,C;"..errline2
   terminal.ErrorBeep()
   local screvent = terminal.DisplayObject(scrlines,KEY.CLR+KEY.CNCL+KEY.OK,evt,to)
-  if screvent == "CHIP_CARD_IN" then
+  if nextstep then
+    do_obj_txn_nok_print(errcode,errmsg,1) 
+    return nextstep()
+  elseif screvent == "CHIP_CARD_IN" then
     return do_obj_idle()
   elseif txn.rc and txn.rc == "98" or tcperrmsg == "MAC" then config.logonstatus = "194"; config.logok = false
 	do_obj_txn_nok_print(errcode,errmsg,1)  

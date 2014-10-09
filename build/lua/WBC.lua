@@ -13,6 +13,10 @@ function do_obj_wbc_swipe_insert()
   if txn.ctls == "CTLS_E" then
     txn.chipcard = true
     txn.cvmlimit = ecrd.CVMLIMIT
+    local aid = get_value_from_tlvs("9F06")
+    if string.sub(aid,1,10) == "A000000384" and config.ehub == "YES" then
+	 txn.eftpos = true
+    end
   elseif txn.chipcard then 
     ok = emv_init()
   end
@@ -23,14 +27,14 @@ function emv_init()
   local ok = 0
   if txn.chipcard then
     ok = terminal.EmvTransInit()
-	local amt,acctype = ecrd.AMT,0
+	local amt,acctype,eftpos_mcard = ecrd.AMT,0,0
 	txn.apps = 0
-    if ok == 0 then ok,txn.apps = terminal.EmvSelectApplication(amt,acctype) end
-	if not config.ehub then config.ehub = terminal.GetJsonValue("CONFIG","EHUB") end
+    if ok == 0 then ok,txn.apps,eftpos_mcard = terminal.EmvSelectApplication(amt,acctype) end
 	if ok == 0 then
 		local tag_aid = string.upper(terminal.EmvGetTagData(0x4F00))
 		local eftpos = (tag_aid and string.sub(tag_aid,1,10) == "A000000384") 
 		if eftpos and config.ehub == "YES" then txn.eftpos = true end
+		if eftpos_mcard == 1 then txn.eftpos_mcard = 1 end
 	end
     if ok ~= 0 and config.fallback and ok ~= 103 --[[CARD_REMOVED]] and ok ~= 104 --[[CARD_BLOCKED]] and ok ~= 105 --[[APPL_BLOCKED]] and ok ~= 110 --[[TRANS_CANCELLED]] and ok ~= 130 --[[INVALID_PARAMETER]] then
       txn.emv.fallback = true
@@ -313,22 +317,31 @@ function do_obj_account()
   local screvents = EVT.TIMEOUT+EVT.SCT_OUT
   txn.account = ""
   local ok,desc = get_cardinfo()
-  local acct = ok and txn.chipcard and not txn.ctls and not txn.fallback and not txn.earlyemv and terminal.EmvGlobal("GET","ACCT")
+  local acct = ""
+  if ok and txn.chipcard and not txn.fallback and not txn.earlyemv then
+	if txn.ctls then
+	  local f9f06 = get_value_from_tlvs("9F06")
+	  local cfgfile = terminal.EmvFindCfgFile(f9f06)
+	  if cfgfile ~="" then acct = terminal.GetJsonValue(cfgfile,"CTLS_ACCT") end
+	else acct = terminal.EmvGlobal("GET","ACCT")
+		if ( not acct or acct == "" ) and txn.eftpos_mcard  then acct = "CREDIT" end
+	end
+  end
   txn.account = (acct or "")
   
   if not ok then
 	return do_obj_txn_nok(desc)
   elseif txn.ctls and txn.CTEMVRS == "W30" then
 	return do_obj_transdial()  
+  elseif txn.account ~="" then
+		scrlines = "WIDELBL,THIS,"..txn.account.." ACCOUNT,2,C;".."WIDELBL,,26,4,C;"
+		terminal.DisplayObject(scrlines,0,EVT.TIMEOUT,ScrnTimeoutHF)
+		return do_obj_pin()
   elseif txn.ctls or txn.cardname == "AMEX" or txn.cardname == "DINERS" or txn.cardname =="JCB" or txn.moto or txn.pan and #txn.pan > 10 then
 	txn.account = "CREDIT" 
 	scrlines = "WIDELBL,,119,2,C;".."WIDELBL,,26,3,C;"
 	terminal.DisplayObject(scrlines,0,EVT.TIMEOUT,ScrnTimeoutHF)
     return do_obj_pin()
-  elseif txn.account ~="" then
-		scrlines = "WIDELBL,THIS,"..txn.account.." ACCOUNT,2,C;".."WIDELBL,,26,4,C;"
-		terminal.DisplayObject(scrlines,0,EVT.TIMEOUT,ScrnTimeoutHF)
-		return do_obj_pin()
   else
       if txn.cardname and string.sub(txn.cardname,1,5) == "DEBIT" then scrlines = scrlines_nocr end
 	  local screvent,scrinput = terminal.DisplayObject(scrlines,scrkeys,screvents,ScrnTimeout)
@@ -404,6 +417,7 @@ end
 
 function do_obj_offline_check(revrequired)
 	local FAILED_TO_CONNECT = 3
+			  terminal.DebugDisp("boyang tvr before offline check= "..(terminal.EmvGetTagData(0x9500)))
 	local ret = config.no_offline and -1 or terminal.EmvUseHostData(FAILED_TO_CONNECT,"")
 	if ret == 0 then 
 		txn.rc = "Y3"
@@ -653,6 +667,7 @@ function prepare_txn_req()
     elseif txn.account == "CHEQUE" then proccode = proccode .. "2000"
     elseif txn.account == "CREDIT" then proccode = proccode .. "3000" end
     table.insert(msg_flds,"3:" .. proccode)
+	terminal.DebugDisp("boyang proc = "..proccode)
     table.insert(msg_flds,"4:" .. tostring(txn.totalamt))
     if msgid == "220" then
       local mmddhhmmss = terminal.Time( "MMDDhhmmss")
@@ -729,6 +744,7 @@ function prepare_txn_req()
 			local EMV8200 = ""
 			local EMV9f36 = ""
 			local EMV9f34 = ""
+			local EMV9f35 = ""
 			local EMV9f27 = ""
 			local EMV9f1e = ""
 			local EMV9f10 = ""
@@ -740,12 +756,14 @@ function prepare_txn_req()
 			local EMV9c00 = ""
 			local EMV9f37 = ""
 			local EMV9f21 = "" --TODO
+			local EMV8400 = ""
 			local tagvalue = ""
 			tagvalue = get_value_from_tlvs("5000")
 			EMV5000 = "50".. string.format("%02X",#tagvalue/2) .. tagvalue
 			tagvalue = get_value_from_tlvs("9F02")
 			EMV9f02 = "9F02"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9F03")
+			if tagvalue == "" then tagvalue = "000000000000" end -- TEST
 			EMV9f03 = "9F03"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9F26")
 			EMV9f26 = "9F26"..string.format("%02X",#tagvalue/2) .. tagvalue
@@ -755,6 +773,9 @@ function prepare_txn_req()
 			EMV9f36 = "9F36"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9F34")
 			EMV9f34 = "9F34"..string.format("%02X",#tagvalue/2)  .. tagvalue
+			tagvalue = get_value_from_tlvs("9F35")
+			if tagvalue == "" then tagvalue = "22" end
+			EMV9f35 = "9F35"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9F27")
 			EMV9f27 = "9F27"..string.format("%02X",#tagvalue/2)  .. tagvalue
   			EMV9f1e = "9F1E08"..terminal.HexToString(string.sub(config.serialno,-8))
@@ -766,6 +787,7 @@ function prepare_txn_req()
 			tagvalue = get_value_from_tlvs("9F1A")
 			EMV9f1a = "9F1A"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9500")
+			if #tagvalue > 0 and txn.eftpos and #tagvalue ~= "0000000000" then tagvalue = "0000000000" end
 			EMV9500 = "95".. string.format("%02X",#tagvalue/2) .. tagvalue
 			tagvalue = get_value_from_tlvs("5F2A")
 			EMV5f2a = "5F2A"..string.format("%02X",#tagvalue/2)  .. tagvalue
@@ -775,8 +797,10 @@ function prepare_txn_req()
 			EMV9c00 = "9C".. string.format("%02X",#tagvalue/2) .. tagvalue
 			tagvalue = get_value_from_tlvs("9F37")
 			EMV9f37 = "9F37"..string.format("%02X",#tagvalue/2) .. tagvalue
+			tagvalue = get_value_from_tlvs("8400")
+			EMV8400 = "84"..string.format("%02X",#tagvalue/2) .. tagvalue
 
-			tlvs=tlvs..EMV5f2a..EMV8200..EMV9500..EMV9a00..EMV9c00..EMV9f02..EMV9f03..EMV9f10..EMV9f1a..EMV9f21..EMV9f26..EMV9f27..EMV9f33..EMV9f34..EMV9f36..EMV9f37
+			tlvs=tlvs..EMV5f2a..EMV8200..(txn.eftpos and EMV8400 or "")..EMV9500..EMV9a00..EMV9c00..EMV9f02..EMV9f03..EMV9f10..EMV9f1a..EMV9f21..EMV9f26..EMV9f27..EMV9f33..EMV9f34..(txn.eftpos and EMV9f35 or "")..EMV9f36..EMV9f37
 	  else
 		local tag9f06 = string.upper(terminal.EmvGetTagData(0x9F06))
 		
@@ -1379,7 +1403,8 @@ end
 
 function tcpconnect()
   if config.nextonline_fail then config.nextonline_fail = nil; return "TESTING" end -- TESTING
-  local tcperrmsg = terminal.TcpConnect( "6",config.apn,"B1","0","",config.hip,config.port,"10","4096","10000") -- "6" CLNP
+  if not config.tcptimeout then config.tcptimeout = 30 end
+  local tcperrmsg = terminal.TcpConnect( "6",config.apn,"B1","0","",config.hip,config.port,config.tcptimeout,"4096","10000") -- "6" CLNP
   return(tcperrmsg)
 end
 
@@ -1405,6 +1430,7 @@ function tcpsend(msg)
   if config.msgenc == "2" and ( mti == "0100" or mti=="0200" or mti == "0220" or mti == "0400") then
 	msg = mti .. msg_enc( "E", string.sub(msg,5))
   end
+  if mti == "0200" then debugPrint(msg) end
   tcperrmsg = terminal.TcpSend(msg)
   txn.tcpsent = true
   return(tcperrmsg)
@@ -1412,8 +1438,7 @@ end
 
 function tcprecv()
   local rcvmsg,tcperrmsg ="",""
-  local chartimeout,timeout = "2000","25"
-  tcperrmsg,rcvmsg = terminal.TcpRecv(chartimeout,timeout)
+  tcperrmsg,rcvmsg = terminal.TcpRecv("2000",config.tcptimeout)
   
   if tcperrmsg == "NOERROR" and #rcvmsg > 4 and config.msgenc == "2" then
     local mti = string.sub(rcvmsg,1,4)
@@ -1430,7 +1455,7 @@ function tcperrorcode(errmsg)
                SHUTDOWN="W8",DHCP="W9",PPP_AUTH="W10",PPP_LCP="W11",IPCP="W12",ETH_SND_FAIL="W13",
                ETH_RCV_FAIL="W14",BATTERY="W15",COVERAGE="W16",SIM="W17",NETWORK="W18",PDP="W19",SIGNAL="W20",
                CONNECT="W21",GENERAL="W22",RCV_FAIL="W23",TIMEOUT="W24",ITIMEOUT="W25",MAC="W26",RCV_FAIL="W27",SND_FAIL="W28",
-			   NO_RESPONSE="W29"
+			   NO_RESPONSE="W29", SWIPE_INSERT="W32"
 			   }
   return(pstnerr_t[errmsg])
 end

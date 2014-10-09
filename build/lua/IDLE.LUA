@@ -174,6 +174,11 @@ function init_config()
   if config.timeadjust == "" or config.timeadjust == "0" then config.timeadjust = nil end
   local fb = terminal.GetJsonValue("CONFIG","EMVFALLBACK")
   config.fallback = (fb~="NO" and true or false)
+  config.ehub = terminal.GetJsonValue("CONFIG","EHUB")
+  config.tcptimeout = terminal.GetJsonValue("CONFIG","BANKTCPTIMEOUT")
+  if config.tcptimeout =="" then config.tcptimeout = "30" end
+  if config.ehub ~= "NO" then config.ehub = "YES" end
+
 end
 
 init_config()

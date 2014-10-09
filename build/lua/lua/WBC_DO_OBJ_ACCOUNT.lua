@@ -9,22 +9,31 @@ function do_obj_account()
   local screvents = EVT.TIMEOUT+EVT.SCT_OUT
   txn.account = ""
   local ok,desc = get_cardinfo()
-  local acct = ok and txn.chipcard and not txn.ctls and not txn.fallback and not txn.earlyemv and terminal.EmvGlobal("GET","ACCT")
+  local acct = ""
+  if ok and txn.chipcard and not txn.fallback and not txn.earlyemv then
+	if txn.ctls then
+	  local f9f06 = get_value_from_tlvs("9F06")
+	  local cfgfile = terminal.EmvFindCfgFile(f9f06)
+	  if cfgfile ~="" then acct = terminal.GetJsonValue(cfgfile,"CTLS_ACCT") end
+	else acct = terminal.EmvGlobal("GET","ACCT")
+		if ( not acct or acct == "" ) and txn.eftpos_mcard  then acct = "CREDIT" end
+	end
+  end
   txn.account = (acct or "")
   
   if not ok then
 	return do_obj_txn_nok(desc)
   elseif txn.ctls and txn.CTEMVRS == "W30" then
 	return do_obj_transdial()  
+  elseif txn.account ~="" then
+		scrlines = "WIDELBL,THIS,"..txn.account.." ACCOUNT,2,C;".."WIDELBL,,26,4,C;"
+		terminal.DisplayObject(scrlines,0,EVT.TIMEOUT,ScrnTimeoutHF)
+		return do_obj_pin()
   elseif txn.ctls or txn.cardname == "AMEX" or txn.cardname == "DINERS" or txn.cardname =="JCB" or txn.moto or txn.pan and #txn.pan > 10 then
 	txn.account = "CREDIT" 
 	scrlines = "WIDELBL,,119,2,C;".."WIDELBL,,26,3,C;"
 	terminal.DisplayObject(scrlines,0,EVT.TIMEOUT,ScrnTimeoutHF)
     return do_obj_pin()
-  elseif txn.account ~="" then
-		scrlines = "WIDELBL,THIS,"..txn.account.." ACCOUNT,2,C;".."WIDELBL,,26,4,C;"
-		terminal.DisplayObject(scrlines,0,EVT.TIMEOUT,ScrnTimeoutHF)
-		return do_obj_pin()
   else
       if txn.cardname and string.sub(txn.cardname,1,5) == "DEBIT" then scrlines = scrlines_nocr end
 	  local screvent,scrinput = terminal.DisplayObject(scrlines,scrkeys,screvents,ScrnTimeout)

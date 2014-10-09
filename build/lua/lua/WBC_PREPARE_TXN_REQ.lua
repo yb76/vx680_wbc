@@ -12,6 +12,7 @@ function prepare_txn_req()
     elseif txn.account == "CHEQUE" then proccode = proccode .. "2000"
     elseif txn.account == "CREDIT" then proccode = proccode .. "3000" end
     table.insert(msg_flds,"3:" .. proccode)
+	terminal.DebugDisp("boyang proc = "..proccode)
     table.insert(msg_flds,"4:" .. tostring(txn.totalamt))
     if msgid == "220" then
       local mmddhhmmss = terminal.Time( "MMDDhhmmss")
@@ -88,6 +89,7 @@ function prepare_txn_req()
 			local EMV8200 = ""
 			local EMV9f36 = ""
 			local EMV9f34 = ""
+			local EMV9f35 = ""
 			local EMV9f27 = ""
 			local EMV9f1e = ""
 			local EMV9f10 = ""
@@ -99,12 +101,14 @@ function prepare_txn_req()
 			local EMV9c00 = ""
 			local EMV9f37 = ""
 			local EMV9f21 = "" --TODO
+			local EMV8400 = ""
 			local tagvalue = ""
 			tagvalue = get_value_from_tlvs("5000")
 			EMV5000 = "50".. string.format("%02X",#tagvalue/2) .. tagvalue
 			tagvalue = get_value_from_tlvs("9F02")
 			EMV9f02 = "9F02"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9F03")
+			if tagvalue == "" then tagvalue = "000000000000" end -- TEST
 			EMV9f03 = "9F03"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9F26")
 			EMV9f26 = "9F26"..string.format("%02X",#tagvalue/2) .. tagvalue
@@ -114,6 +118,9 @@ function prepare_txn_req()
 			EMV9f36 = "9F36"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9F34")
 			EMV9f34 = "9F34"..string.format("%02X",#tagvalue/2)  .. tagvalue
+			tagvalue = get_value_from_tlvs("9F35")
+			if tagvalue == "" then tagvalue = "22" end
+			EMV9f35 = "9F35"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9F27")
 			EMV9f27 = "9F27"..string.format("%02X",#tagvalue/2)  .. tagvalue
   			EMV9f1e = "9F1E08"..terminal.HexToString(string.sub(config.serialno,-8))
@@ -125,6 +132,7 @@ function prepare_txn_req()
 			tagvalue = get_value_from_tlvs("9F1A")
 			EMV9f1a = "9F1A"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9500")
+			if #tagvalue > 0 and txn.eftpos and #tagvalue ~= "0000000000" then tagvalue = "0000000000" end
 			EMV9500 = "95".. string.format("%02X",#tagvalue/2) .. tagvalue
 			tagvalue = get_value_from_tlvs("5F2A")
 			EMV5f2a = "5F2A"..string.format("%02X",#tagvalue/2)  .. tagvalue
@@ -134,8 +142,10 @@ function prepare_txn_req()
 			EMV9c00 = "9C".. string.format("%02X",#tagvalue/2) .. tagvalue
 			tagvalue = get_value_from_tlvs("9F37")
 			EMV9f37 = "9F37"..string.format("%02X",#tagvalue/2) .. tagvalue
+			tagvalue = get_value_from_tlvs("8400")
+			EMV8400 = "84"..string.format("%02X",#tagvalue/2) .. tagvalue
 
-			tlvs=tlvs..EMV5f2a..EMV8200..EMV9500..EMV9a00..EMV9c00..EMV9f02..EMV9f03..EMV9f10..EMV9f1a..EMV9f21..EMV9f26..EMV9f27..EMV9f33..EMV9f34..EMV9f36..EMV9f37
+			tlvs=tlvs..EMV5f2a..EMV8200..(txn.eftpos and EMV8400 or "")..EMV9500..EMV9a00..EMV9c00..EMV9f02..EMV9f03..EMV9f10..EMV9f1a..EMV9f21..EMV9f26..EMV9f27..EMV9f33..EMV9f34..(txn.eftpos and EMV9f35 or "")..EMV9f36..EMV9f37
 	  else
 		local tag9f06 = string.upper(terminal.EmvGetTagData(0x9F06))
 		
