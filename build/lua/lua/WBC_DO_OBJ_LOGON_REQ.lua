@@ -29,6 +29,6 @@ function do_obj_logon_req()
 
     local retmsg = ""
     if as2805msg ~= "" then retmsg = tcpsend(as2805msg) end
-    if retmsg ~= "NOERROR" then txn.tcperror = true; return do_obj_logon_nok(retmsg)
+    if retmsg ~= "NOERROR" then txn.localerror = true; return do_obj_logon_nok(retmsg)
     else return do_obj_logon_resp() end
 end

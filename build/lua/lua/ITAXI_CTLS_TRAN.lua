@@ -3,12 +3,14 @@ function ctls_tran()
     local translimit,cvmlimit=0,0
     local nosaf = 0 --toomany_saf() and 1 or 0
     local tr1,tr2,tlvs,emvres = terminal.CtlsCall(0,amt,nosaf)
+	terminal.DebugDisp("boyang emvres "..emvres)
 
     if tr2 ~= "" then
         if taxicfg.ctls_slimit > 0 and amt > taxicfg.ctls_slimit then tr2 = ""; emvres = "-1025"; end
     elseif tlvs ~= "" then
 		-- limit check is done in f700 ctlsemvcfg.txt
         --local aid = get_value_from_tlvs("9F06",tlvs)
+		--if string.sub(tag_aid,1,10) == "A000000384" and config.ehub == "YES" then
         --translimit,cvmlimit =terminal.CTLSEmvGetLimit(aid) --boyang
         --if string.sub(aid,1,10)=="A000000003" and amt >= translimit or amt > translimit then tlvs = ""; emvres = "-1025" end --TESTING --boyang
        taxi.cvmlimit = cvmlimit
@@ -36,8 +38,8 @@ function ctls_tran()
         taxi.tlvs = tlvs
         taxi.chipcard = true 
         return do_obj_itaxi_pay_swipe()        
-    elseif emvres == "99" or emvres =="-1025" then 
-        if emvres ~= "99" then terminal.DisplayObject("WIDELBL,THIS,NO CONTACTLESS,3,C;".. 
+    elseif emvres == "99" or emvres == "10" or emvres =="-1025" then 
+        if emvres == "-1025" then terminal.DisplayObject("WIDELBL,THIS,NO CONTACTLESS,3,C;".. 
           "WIDELBL,THIS,FOR AMOUNT >".. string.format("%.2f",translimit/100.0) ..",5,C;",KEY.OK,EVT.TIMEOUT,2000) end
         return do_obj_itaxi_paymentmethod()
     elseif emvres == "-1001" or emvres =="-1002" then 

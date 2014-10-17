@@ -6,6 +6,7 @@ function do_obj_transdial()
     if not txn.earlyemv then
 	  if terminal.EmvIsCardPresent() then
 		local acc = (txn.account=="SAVINGS" and 0x10 or txn.account == "CHEQUE" and 0x20 or txn.account=="CREDIT" and 0x30)
+		terminal.DebugDisp("boyang transdial")
 		if emvret == 0 then emvret = terminal.EmvSetAccount(acc) end
 		if emvret == 0 then emvret = terminal.EmvDataAuth() end
 		if emvret == 0 then emvret = terminal.EmvProcRestrict() end
@@ -37,7 +38,7 @@ function do_obj_transdial()
 				  end
 			elseif txn.CTEMVRS == "W30" then --or txn.CTEMVRS == " 0" and toomany_saf() then -- Ofline Auth
 				txn.rc = "W30"
-				txn.tcperror = true
+				txn.localerror = true
 				return do_obj_txn_nok("SAF LIMIT EXCEEDED")
 			elseif txn.CTEMVRS == " 0" then -- Ofline Auth
 				txn.rc = "Y1"

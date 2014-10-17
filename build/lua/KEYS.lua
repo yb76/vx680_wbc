@@ -50,7 +50,9 @@ function do_obj_keys(serdata_in)
   local serdata = terminal.StringToHex( serdata_in,#serdata_in)
   if #serdata < 256 or string.sub(serdata,1,3) ~= "SS," then ok = false end
   if ok then
-   local pubk = string.sub(serdata, 4, 265) -- AA BB CCCCCCCC DDDD : AA- modulus length BB-exponent length CCCC: modulus DDDD: exponent
+    local pubk = ""
+    _,_,_,pubk= string.find (serdata, "([%a%d]*),([%a%d]*),")
+    -- AA BB CCCCCCCC DDDD : AA- modulus length BB-exponent length CCCC: modulus DDDD: exponent
    local kpk_sess = "5"
    ok = terminal.RsaStore(pubk, kpk_sess)
    if ok then
@@ -66,8 +68,13 @@ function do_obj_keys(serdata_in)
        _,_,_,ppid,ektkman,esk,emaster =string.find (serdata2, "([%a%d]*),([%a%d]*),([%a%d]*),([%a%d]*),([%a%d]*)")
        terminal.PpidUpdate(ppid)
        ok = ok and terminal.Derive3Des(ektkman,"",ktk,kd)
+       local lkey = string.sub(terminal.GetKey(ktk),1,16)
+       ok = ok and terminal.Derive3Des(string.sub(ektkman,-16)..string.sub(ektkman,1,16),"",ktk,kd)
+       local rkey = string.sub(terminal.GetKey(ktk),1,16)
+
+       terminal.DesStore(lkey..rkey,"16",ktk)
        ok = ok and terminal.Derive3Des(esk,"",sk,kd)
-       ok = ok and terminal.Derive3Des(emaster,"",master,kd)
+       ok = ok and terminal.InjectInternalKey("16",master)
 
        local serialno= terminal.SerialNo()
        local tosend = "06" .. string.format("%10s",serialno)..string.format("%16s",ppid)..terminal.Time("YYMMDDhhmmss")

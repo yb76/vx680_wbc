@@ -8,9 +8,9 @@ function do_obj_itaxi_meter()
       local amt = tonumber(scrinput) or 0
       if scrinput == "" or amt < 500 or amt >10000 then
         scrlines = "WIDELBL,THIS,AMOUNT IS "..(amt > 10000 and "GREATER THAN $100 ?" or "LESS THAN $5?") ..",5,C;".."BUTTONS_1,THIS,YES,8,10;".. "BUTTONS_2,THIS,NO,8,33;"
-        scrkeys  = KEY.CNCL
+        scrkeys  = KEY.CNCL + KEY.OK
         screvent = terminal.DisplayObject(scrlines,scrkeys,EVT.TIMEOUT,ScrnTimeout)
-        if screvent == "BUTTONS_1" then ok = true else ok = false end
+        if screvent == "KEY_OK" or screvent == "BUTTONS_1" then ok = true else ok = false end
       end
       if ok then
         taxi.meter = tonumber(scrinput)

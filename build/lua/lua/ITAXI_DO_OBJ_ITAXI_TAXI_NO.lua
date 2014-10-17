@@ -1,5 +1,5 @@
 function do_obj_itaxi_taxi_no()
-  local scrlines = ",THIS,ENTER TAXI NO,4,C;" .. "STRING," .. taxicfg.taxi_no .. ",,7,14,10,1;".."BUTTONA,THIS,ALPHA ,B,C;"
+  local scrlines = ",THIS,ENTER "..(taxicfg.hire and "HIRE CAR NO" or "TAXI NO")..",4,C;".. "STRING," .. taxicfg.taxi_no .. ",,7,14,10,1;".."BUTTONA,THIS,ALPHA ,B,C;"
   local screvent,scrinput = terminal.DisplayObject(scrlines,KEY.OK+KEY.CNCL+KEY.CLR,EVT.TIMEOUT,ScrnTimeout)
   
   if screvent == "KEY_OK" then

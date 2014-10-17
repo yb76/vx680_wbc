@@ -1,7 +1,7 @@
 function do_obj_txn_req()
 	local as2805msg = prepare_txn_req()
     local retmsg = ""
-    if as2805msg == "" then txn.tcperror = true 
+    if as2805msg == "" then txn.localerror = true 
 		return do_obj_txn_nok(retmsg)
 	else
 		if terminal.FileExist("TXN_REQ") then
@@ -22,7 +22,7 @@ function do_obj_txn_req()
 					revrequired = true
 				end
 				return do_obj_offline_check(revrequired)
-			else txn.tcperror = true 
+			else txn.localerror = true 
 				return do_obj_txn_nok(retmsg)
 			end
 		else return do_obj_txn_resp()

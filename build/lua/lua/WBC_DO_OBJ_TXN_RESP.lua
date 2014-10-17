@@ -10,7 +10,7 @@ function do_obj_txn_resp()
 		copy_txn_to_reversal()
 		local revrequired = true
 		return do_obj_offline_check(revrequired)
-	else txn.tcperror = true
+	else txn.localerror = true
 		return do_obj_txn_nok(errmsg)
 	end
   else
@@ -35,7 +35,7 @@ function do_obj_txn_resp()
 		elseif fld39 == "98" and fld48 =="" then -- invalid MAC
 			return do_obj_txn_nok()
 		else
-			txn.tcperror = true
+			txn.localerror = true
 			copy_txn_to_reversal()
 			return do_obj_txn_nok("MAC") -- mac error 
 		end
@@ -55,14 +55,19 @@ function do_obj_txn_resp()
       local HOST_AUTHORISED,emvok = 1,0
 
       if not txn.ctls and txn.chipcard and not txn.emv.fallback and not txn.earlyemv then
-		local rc = terminal.HexToString(txn.rc)
-		terminal.EmvSetTagData(0x8A00,rc)
-		emvok = terminal.EmvUseHostData(HOST_AUTHORISED,fld55) 
+		if not terminal.EmvIsCardPresent() then emvok = 103 
+		else local rc = terminal.HexToString(txn.rc)
+			terminal.EmvSetTagData(0x8A00,rc)
+			emvok = terminal.EmvUseHostData(HOST_AUTHORISED,fld55) 
+		end
 	  end
       if emvok ~= 0--[[TRANS_DECLINE]] then 
-		txn.rc = "Z4"
 	    copy_txn_to_reversal()
-        return do_obj_txn_nok(txn.rc) 
+		if emvok == 103 then txn.rc = "W33"; txn.localerror = true
+			return do_obj_txn_nok("CARD REMOVED")
+		else txn.rc = "Z4" 
+			return do_obj_txn_nok(txn.rc) 
+		end
       else
 		return do_obj_txn_ok() 
 	  end

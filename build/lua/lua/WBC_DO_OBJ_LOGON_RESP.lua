@@ -1,10 +1,10 @@
 function do_obj_logon_resp()
   local errmsg, rcvmsg = tcprecv()
   if errmsg ~= "NOERROR" then
-    txn.tcperror = true
+    txn.localerror = true
     return do_obj_logon_nok(errmsg)
   elseif not rcvmsg or rcvmsg == "" then
-    txn.tcperror = true
+    txn.localerror = true
 	return do_obj_logon_nok("NO_RESPONSE")
   else
     local msg_t = {"GET,12","GET,13","GETS,39","GETS,44","GETS,47","GET,48","GET,70" }

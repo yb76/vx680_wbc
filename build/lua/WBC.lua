@@ -35,6 +35,7 @@ function emv_init()
 		local eftpos = (tag_aid and string.sub(tag_aid,1,10) == "A000000384") 
 		if eftpos and config.ehub == "YES" then txn.eftpos = true end
 		if eftpos_mcard == 1 then txn.eftpos_mcard = 1 end
+		terminal.DebugDisp("txn.eftpos_mcard = ".. (txn.eftpos_mcard or "empty"))
 	end
     if ok ~= 0 and config.fallback and ok ~= 103 --[[CARD_REMOVED]] and ok ~= 104 --[[CARD_BLOCKED]] and ok ~= 105 --[[APPL_BLOCKED]] and ok ~= 110 --[[TRANS_CANCELLED]] and ok ~= 130 --[[INVALID_PARAMETER]] then
       txn.emv.fallback = true
@@ -243,16 +244,10 @@ function do_obj_ccv()
   end
 end
 
-function do_obj_ecom_moto(poscc)
-	txn.poscc = poscc
-	txn.moto = true
-	return do_obj_prchamount()
-end
-
 function get_cardinfo()
   terminal.DisplayObject("WIDELBL,THIS,READING DATA,2,C;".."WIDELBL,,26,4,C;",0,0,ScrnTimeoutZO)
-  if txn.chipcard and not txn.emv.fallback then
-    if txn.ctls == "CTLS_E" then
+
+  if txn.ctls == "CTLS_E" then
 		local EMVPAN = get_value_from_tlvs("5A00")
 		local EMVPANSeq = get_value_from_tlvs("5F34")
 		local EMVTRACK2 = get_value_from_tlvs("5700")
@@ -271,7 +266,7 @@ function get_cardinfo()
 			if pinflag or signflag then
 				if pinflag and config.no_pin then
 					txn.rc = "W31"
-					txn.tcperror = true
+					txn.localerror = true
 					return false,"CVM FAILED"
 				end
 				txn.ctlsPin = pinflag and "2" or signflag and "1" or "4"
@@ -287,8 +282,13 @@ function get_cardinfo()
 		if EMVPANSeq~= "" then txn.emv.panseqnum = EMVPANSeq  end
 		if EMVTRACK2~= "" then txn.emv.track2 = EMVTRACK2 end
 		if txn.emv.track2 and #txn.emv.track2 > 37 then txn.emv.track2 = string.sub( txn.emv.track2,1,37) end	
-	end
-
+	elseif txn.ctls == "CTLS_S" then
+		local EMVCVMR = get_value_from_tlvs("9F34")
+		if string.sub(EMVCVMR,2,2) == "2" then txn.ctlsPin = "2" --Enciphered PIN verified online
+		elseif string.sub(EMVCVMR,2,2) == "E" then txn.ctlsPin = "1" --Signature (paper).
+		elseif string.sub(EMVCVMR,2,2) == "F" then txn.ctlsPin = "4" --No CVM required.
+		end
+  elseif txn.chipcard and not txn.emv.fallback then
     if terminal.EmvReadAppData() == 0 then
        txn.emv.pan,txn.emv.panseqnum,txn.emv.track2 = terminal.EmvGetTagData(0x5A00,0x5F34,0x5700)
        if txn.emv.track2 and #txn.emv.track2 > 37 then txn.emv.track2 = string.sub( txn.emv.track2,1,37) end
@@ -319,7 +319,7 @@ function do_obj_account()
   local ok,desc = get_cardinfo()
   local acct = ""
   if ok and txn.chipcard and not txn.fallback and not txn.earlyemv then
-	if txn.ctls then
+	if txn.ctls == "CTLS_E" then
 	  local f9f06 = get_value_from_tlvs("9F06")
 	  local cfgfile = terminal.EmvFindCfgFile(f9f06)
 	  if cfgfile ~="" then acct = terminal.GetJsonValue(cfgfile,"CTLS_ACCT") end
@@ -337,7 +337,7 @@ function do_obj_account()
 		scrlines = "WIDELBL,THIS,"..txn.account.." ACCOUNT,2,C;".."WIDELBL,,26,4,C;"
 		terminal.DisplayObject(scrlines,0,EVT.TIMEOUT,ScrnTimeoutHF)
 		return do_obj_pin()
-  elseif txn.ctls or txn.cardname == "AMEX" or txn.cardname == "DINERS" or txn.cardname =="JCB" or txn.moto or txn.pan and #txn.pan > 10 then
+  elseif txn.ctls or txn.cardname == "AMEX" or txn.cardname == "DINERS" or txn.cardname =="JCB" or txn.moto or txn.pan then
 	txn.account = "CREDIT" 
 	scrlines = "WIDELBL,,119,2,C;".."WIDELBL,,26,3,C;"
 	terminal.DisplayObject(scrlines,0,EVT.TIMEOUT,ScrnTimeoutHF)
@@ -375,7 +375,7 @@ function do_obj_pin()
 
   if txn.pan then return do_obj_transdial()
   elseif txn.ctls and txn.chipcard and config.ctls_cvm and not hasbit( tonumber(config.ctls_cvm,16),bit(7))  then do_obj_transdial()
-  elseif txn.ctls and txn.chipcard and txn.ctlsPin ~= "2" and txn.ctlsPin ~= "3" then 
+  elseif txn.ctls and txn.ctlsPin and txn.ctlsPin ~= "2" and txn.ctlsPin ~= "3" then 
   	return do_obj_transdial()
   elseif txn.chipcard and not txn.earlyemv and not txn.emv.fallback and not txn.ctls 
 	then txn.pinblock_flag = "TODO";return do_obj_transdial()
@@ -417,8 +417,15 @@ end
 
 function do_obj_offline_check(revrequired)
 	local FAILED_TO_CONNECT = 3
-			  terminal.DebugDisp("boyang tvr before offline check= "..(terminal.EmvGetTagData(0x9500)))
+
+			  local a = terminal.EmvGetTagData(0x9500)
+			  terminal.DebugDisp("boyang tvr before offline check= "..a)
+			  terminal.EmvSetTagData(0x9500,"0"..string.sub(a,2))
+			  a = terminal.EmvGetTagData(0x9500)
+			  terminal.DebugDisp("boyang tvr before offline check2= "..a)
+
 	local ret = config.no_offline and -1 or terminal.EmvUseHostData(FAILED_TO_CONNECT,"")
+			  terminal.DebugDisp("boyang tvr after offline check= "..(terminal.EmvGetTagData(0x9500))..",ret = "..ret)
 	if ret == 0 then 
 		txn.rc = "Y3"
 		--prepare 0220
@@ -462,6 +469,7 @@ function do_obj_transdial()
     if not txn.earlyemv then
 	  if terminal.EmvIsCardPresent() then
 		local acc = (txn.account=="SAVINGS" and 0x10 or txn.account == "CHEQUE" and 0x20 or txn.account=="CREDIT" and 0x30)
+		terminal.DebugDisp("boyang transdial")
 		if emvret == 0 then emvret = terminal.EmvSetAccount(acc) end
 		if emvret == 0 then emvret = terminal.EmvDataAuth() end
 		if emvret == 0 then emvret = terminal.EmvProcRestrict() end
@@ -493,7 +501,7 @@ function do_obj_transdial()
 				  end
 			elseif txn.CTEMVRS == "W30" then --or txn.CTEMVRS == " 0" and toomany_saf() then -- Ofline Auth
 				txn.rc = "W30"
-				txn.tcperror = true
+				txn.localerror = true
 				return do_obj_txn_nok("SAF LIMIT EXCEEDED")
 			elseif txn.CTEMVRS == " 0" then -- Ofline Auth
 				txn.rc = "Y1"
@@ -657,7 +665,7 @@ function prepare_txn_req()
     local msg_flds = {}
     local msgid = "200"
     local proccode = ""
-    if txn.func == "PRCH" then  if txn.cashamt > 0 then proccode = "09" else proccode = "00" end  end
+    if txn.func == "PRCH" then proccode = "00" end
 	if txn.rc and txn.rc == "Y1" then msgid = "220" end
 	
     table.insert(msg_flds,"0:"..msgid)
@@ -667,7 +675,6 @@ function prepare_txn_req()
     elseif txn.account == "CHEQUE" then proccode = proccode .. "2000"
     elseif txn.account == "CREDIT" then proccode = proccode .. "3000" end
     table.insert(msg_flds,"3:" .. proccode)
-	terminal.DebugDisp("boyang proc = "..proccode)
     table.insert(msg_flds,"4:" .. tostring(txn.totalamt))
     if msgid == "220" then
       local mmddhhmmss = terminal.Time( "MMDDhhmmss")
@@ -695,7 +702,8 @@ function prepare_txn_req()
     if txn.chipcard and txn.emv.panseqnum then table.insert(msg_flds,"23:" .. txn.emv.panseqnum) end
     table.insert(msg_flds,"24:000")
 
-    if txn.poscc == nil then txn.poscc = "00" end
+    if txn.pan then txn.poscc = "08"
+	elseif not txn.poscc then txn.poscc = "00" end
     table.insert(msg_flds,"25:" .. txn.poscc)
     table.insert(msg_flds,"32:" .. config.aiic)
     if txn.track2 then table.insert(msg_flds,"35:" .. txn.track2)
@@ -713,97 +721,81 @@ function prepare_txn_req()
     else tcc = "03" end
     if txn.ccv then fld47 = fld47 ..txn.ccv  end
     fld47 = fld47 .. "TCC" ..tcc.."\\"
-	if txn.efb then fld47 = fld47 .."FBKE\\" end
-	local cvm_sign= txn.chipcard and terminal.EmvGlobal("GET","SIGN")
-	local cvmr = txn.chipcard and not txn.earlyemv and not txn.emv.fallback and terminal.EmvGetTagData(0x9f34)
-	if txn.moto then fld47 = fld47 .. "WCV6\\"
+	local wcv = "1"
+	local cvmr = (txn.ctls == "CTLS_E" and get_value_from_tlvs("9F34")) or not txn.earlyemv and not txn.emv.fallback and not txn.ctls and terminal.EmvGetTagData(0x9f34)
+	
+	if txn.moto then wcv = "1"
 	elseif cvmr then
 		local cvmr1,cvm3 = string.sub(cvmr,2,2),string.sub(cvmr,5,6)
 		if cvm3=="02" and (cvmr1 == "1" or cvmr1 == "3" or cvmr1 == "4" or cvmr1 == "5") then
-			txn.offlinepin = true ; fld47 = fld47 .."WCV3\\"
-		elseif cvmr1 == "2" and txn.pinblock and #txn.pinblock > 0 then fld47 = fld47 .."WCV2\\"
-		else fld47 = fld47 .."WCV1\\"
+			txn.offlinepin = true ; wcv = "3"
+		elseif cvm3=="02" and (cvmr1 == "F") then
+			wcv = "6"
+		elseif cvm3=="02" and (cvmr1 == "E") then
+			wcv = "1"
+		elseif cvm1=="2" and txn.pinblock and #txn.pinblock > 0 then wcv = "2"
 		end
-	else
-		if txn.pinblock and #txn.pinblock > 0 then fld47 = fld47 .."WCV2\\" else fld47 = fld47 .."WCV1\\" end 
+	elseif txn.pinblock and #txn.pinblock > 0 then wcv = "2"
 	end
+
+	fld47 = fld47 .."WCV"..wcv.."\\"
     if txn.chipcard and txn.emv.fallback and posentry == "801" then fld47 = fld47 .."FCR\\" end
+	terminal.DebugDisp("boyang fld47 = ".. fld47)
     table.insert(msg_flds,"47:" ..terminal.HexToString(fld47))
 
 	local _,_,olpin = string.find(fld47, "WCV2")
     if not txn.offlinepin and txn.pinblock and #txn.pinblock > 0 then table.insert(msg_flds,"52:" ..txn.pinblock) end
-    if txn.cashamt and txn.cashamt > 0 then local s_amt= terminal.HexToString(string.format("%012s",txn.cashamt)); table.insert(msg_flds,"54:" .. s_amt) end
 
 	local tlvs =""
     if txn.chipcard and not txn.earlyemv and not txn.emv.fallback then
 	  if txn.ctls == "CTLS_E" then
-			local EMV5000 = ""
-			local EMV9f02 = ""
-			local EMV9f03 = ""
-			local EMV9f26 = ""
-			local EMV8200 = ""
-			local EMV9f36 = ""
-			local EMV9f34 = ""
-			local EMV9f35 = ""
-			local EMV9f27 = ""
-			local EMV9f1e = ""
-			local EMV9f10 = ""
-			local EMV9f33 = ""
-			local EMV9f1a = ""
-			local EMV9500 = ""
-			local EMV5f2a = ""
-			local EMV9a00 = ""
-			local EMV9c00 = ""
-			local EMV9f37 = ""
-			local EMV9f21 = "" --TODO
-			local EMV8400 = ""
 			local tagvalue = ""
 			tagvalue = get_value_from_tlvs("5000")
-			EMV5000 = "50".. string.format("%02X",#tagvalue/2) .. tagvalue
+			local EMV5000 = "50".. string.format("%02X",#tagvalue/2) .. tagvalue
 			tagvalue = get_value_from_tlvs("9F02")
-			EMV9f02 = "9F02"..string.format("%02X",#tagvalue/2)  .. tagvalue
+			local EMV9f02 = "9F02"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9F03")
 			if tagvalue == "" then tagvalue = "000000000000" end -- TEST
-			EMV9f03 = "9F03"..string.format("%02X",#tagvalue/2)  .. tagvalue
+			local EMV9f03 = "9F03"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9F26")
-			EMV9f26 = "9F26"..string.format("%02X",#tagvalue/2) .. tagvalue
+			local EMV9f26 = "9F26"..string.format("%02X",#tagvalue/2) .. tagvalue
 			tagvalue = get_value_from_tlvs("8200")
-			EMV8200 = "82".. string.format("%02X",#tagvalue/2) .. tagvalue
+			local EMV8200 = "82".. string.format("%02X",#tagvalue/2) .. tagvalue
 			tagvalue = get_value_from_tlvs("9F36")
-			EMV9f36 = "9F36"..string.format("%02X",#tagvalue/2)  .. tagvalue
+			local EMV9f36 = "9F36"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9F34")
-			EMV9f34 = "9F34"..string.format("%02X",#tagvalue/2)  .. tagvalue
+			local EMV9f34 = "9F34"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9F35")
 			if tagvalue == "" then tagvalue = "22" end
-			EMV9f35 = "9F35"..string.format("%02X",#tagvalue/2)  .. tagvalue
+			local EMV9f35 = "9F35"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9F27")
-			EMV9f27 = "9F27"..string.format("%02X",#tagvalue/2)  .. tagvalue
-  			EMV9f1e = "9F1E08"..terminal.HexToString(string.sub(config.serialno,-8))
+			local EMV9f27 = "9F27"..string.format("%02X",#tagvalue/2)  .. tagvalue
+  			local EMV9f1e = "9F1E08"..terminal.HexToString(string.sub(config.serialno,-8))
 			tagvalue = get_value_from_tlvs("9F10")
-			EMV9f10 = "9F10"..string.format("%02X",#tagvalue/2)  .. tagvalue
+			local EMV9f10 = "9F10"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9F33")
-			if tagvalue == "" then EMV9f33 = "9F3303" .. ( "E0" .. ( config.ctls_cvm or "68" ) .. "C8" )
-			else EMV9f33 = "9F33"..string.format("%02X",#tagvalue/2) .. tagvalue end
+			local EMV9f33 = "9F33"..string.format("%02X",#tagvalue/2) .. tagvalue
+			if tagvalue == "" then EMV9f33 = "9F3303E068C8" end
 			tagvalue = get_value_from_tlvs("9F1A")
-			EMV9f1a = "9F1A"..string.format("%02X",#tagvalue/2)  .. tagvalue
+			local EMV9f1a = "9F1A"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9500")
 			if #tagvalue > 0 and txn.eftpos and #tagvalue ~= "0000000000" then tagvalue = "0000000000" end
-			EMV9500 = "95".. string.format("%02X",#tagvalue/2) .. tagvalue
+			local EMV9500 = "95".. string.format("%02X",#tagvalue/2) .. tagvalue
 			tagvalue = get_value_from_tlvs("5F2A")
-			EMV5f2a = "5F2A"..string.format("%02X",#tagvalue/2)  .. tagvalue
+			local EMV5f2a = "5F2A"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9A00")
-			EMV9a00 = "9A".. string.format("%02X",#tagvalue/2) .. tagvalue
+			local EMV9a00 = "9A".. string.format("%02X",#tagvalue/2) .. tagvalue
 			tagvalue = get_value_from_tlvs("9C00")
-			EMV9c00 = "9C".. string.format("%02X",#tagvalue/2) .. tagvalue
+			local EMV9c00 = "9C".. string.format("%02X",#tagvalue/2) .. tagvalue
 			tagvalue = get_value_from_tlvs("9F37")
-			EMV9f37 = "9F37"..string.format("%02X",#tagvalue/2) .. tagvalue
+			local EMV9f37 = "9F37"..string.format("%02X",#tagvalue/2) .. tagvalue
 			tagvalue = get_value_from_tlvs("8400")
-			EMV8400 = "84"..string.format("%02X",#tagvalue/2) .. tagvalue
-
-			tlvs=tlvs..EMV5f2a..EMV8200..(txn.eftpos and EMV8400 or "")..EMV9500..EMV9a00..EMV9c00..EMV9f02..EMV9f03..EMV9f10..EMV9f1a..EMV9f21..EMV9f26..EMV9f27..EMV9f33..EMV9f34..(txn.eftpos and EMV9f35 or "")..EMV9f36..EMV9f37
+			local EMV8400 = "84"..string.format("%02X",#tagvalue/2) .. tagvalue
+			local EMV9f21 = "9F2103"..terminal.Time( "hhmmss")
+			tagvalue = get_value_from_tlvs("9F53")
+			local EMV9f53 = "9F53"..string.format("%02X",#tagvalue/2) .. tagvalue
+			tlvs=tlvs..EMV5f2a..EMV8200..(txn.eftpos and EMV8400 or "")..EMV9500..EMV9a00..EMV9c00..EMV9f02..EMV9f03..EMV9f10..EMV9f1a..EMV9f21..EMV9f26..EMV9f27..EMV9f33..EMV9f34..(txn.eftpos and EMV9f35 or "")..EMV9f36..EMV9f37..(txn.cardname == "MASTERCARD" and EMV9f53 or "")
 	  else
-		local tag9f06 = string.upper(terminal.EmvGetTagData(0x9F06))
-		
         tlvs = terminal.EmvPackTLV("5F2A".."8200"..(txn.eftpos and "8400" or "").."9500".."9A00".."9C00".."9F02".."9F03".."9F10".."9F1A".."9F21".."9F26".."9F27".."9F33".."9F34"..(txn.eftpos and "9F35" or "").."9F36".."9F37"..(txn.cardname == "MASTERCARD" and "9F53" or ""))
 	  end
       txn.emv.tlv = tlvs
@@ -825,7 +817,7 @@ end
 function do_obj_txn_req()
 	local as2805msg = prepare_txn_req()
     local retmsg = ""
-    if as2805msg == "" then txn.tcperror = true 
+    if as2805msg == "" then txn.localerror = true 
 		return do_obj_txn_nok(retmsg)
 	else
 		if terminal.FileExist("TXN_REQ") then
@@ -846,7 +838,7 @@ function do_obj_txn_req()
 					revrequired = true
 				end
 				return do_obj_offline_check(revrequired)
-			else txn.tcperror = true 
+			else txn.localerror = true 
 				return do_obj_txn_nok(retmsg)
 			end
 		else return do_obj_txn_resp()
@@ -866,7 +858,7 @@ function do_obj_txn_resp()
 		copy_txn_to_reversal()
 		local revrequired = true
 		return do_obj_offline_check(revrequired)
-	else txn.tcperror = true
+	else txn.localerror = true
 		return do_obj_txn_nok(errmsg)
 	end
   else
@@ -891,7 +883,7 @@ function do_obj_txn_resp()
 		elseif fld39 == "98" and fld48 =="" then -- invalid MAC
 			return do_obj_txn_nok()
 		else
-			txn.tcperror = true
+			txn.localerror = true
 			copy_txn_to_reversal()
 			return do_obj_txn_nok("MAC") -- mac error 
 		end
@@ -911,14 +903,19 @@ function do_obj_txn_resp()
       local HOST_AUTHORISED,emvok = 1,0
 
       if not txn.ctls and txn.chipcard and not txn.emv.fallback and not txn.earlyemv then
-		local rc = terminal.HexToString(txn.rc)
-		terminal.EmvSetTagData(0x8A00,rc)
-		emvok = terminal.EmvUseHostData(HOST_AUTHORISED,fld55) 
+		if not terminal.EmvIsCardPresent() then emvok = 103 
+		else local rc = terminal.HexToString(txn.rc)
+			terminal.EmvSetTagData(0x8A00,rc)
+			emvok = terminal.EmvUseHostData(HOST_AUTHORISED,fld55) 
+		end
 	  end
       if emvok ~= 0--[[TRANS_DECLINE]] then 
-		txn.rc = "Z4"
 	    copy_txn_to_reversal()
-        return do_obj_txn_nok(txn.rc) 
+		if emvok == 103 then txn.rc = "W33"; txn.localerror = true
+			return do_obj_txn_nok("CARD REMOVED")
+		else txn.rc = "Z4" 
+			return do_obj_txn_nok(txn.rc) 
+		end
       else
 		return do_obj_txn_ok() 
 	  end
@@ -928,7 +925,7 @@ end
 
 function do_obj_txn_ok()
 	local pinchked = not txn.ctls and txn.chipcard and txn.offlinepin or txn.pinblock or txn.ctls and txn.chipcard
-    local signflag =  not txn.moto and ( txn.ctlsPin == "1" or txn.ctlsPin == "3" or txn.rc == "08" or (txn.chipcard and terminal.EmvGlobal("GET","SIGN")) or txn.pan or not pinchked) 
+    local signflag =  not txn.moto and ( txn.ctlsPin == "1" or txn.ctlsPin == "3" or txn.rc == "08" or (txn.chipcard and terminal.EmvGlobal("GET","SIGN")) or txn.pan or not pinchked and not txn.eftpos) 
 	local scrlines,resultstr,resultstr_nosign = "","",""
 	if txn.rc == "08" then 
 		scrlines =  "WIDELBL,,147,2,C;" .."WIDELBL,,54,3,C;" 
@@ -1085,7 +1082,7 @@ function do_obj_txn_nok(tcperrmsg)
   end
   local errcode,errmsg,errline2= "","",""
   local evt,to = EVT.TIMEOUT,500
-  if txn.tcperror then errcode,errmsg = tcperrorcode(tcperrmsg),tcperrmsg 
+  if txn.localerror then errcode,errmsg = localerrorcode(tcperrmsg),tcperrmsg 
   else errcode,errmsg = txn.rc,txn.rc_desc or ""
     local rc = txn.rc
 	if string.sub(txn.rc,1,1)~="Z" then rc = "H"..rc end
@@ -1093,7 +1090,7 @@ function do_obj_txn_nok(tcperrmsg)
 	if rc == "H55" and not txn.re_pin then
 		to = 1000
 		txn.re_pin = 1
-		nextstep = do_obj_pin --( txn.apps and txn.apps > 0 and do_obj_wbc_swipe_insert or do_obj_pin)
+		nextstep =  txn.apps and txn.apps > 0 and do_obj_wbc_swipe_insert or do_obj_pin
 	elseif txn.ctls and rc == "H65" then 
 		errline2 = "WIDELBL,THIS,PLEASE INSERT CARD,4,C;"
 		evt = EVT.SCT_IN+EVT.TIMEOUT
@@ -1207,17 +1204,17 @@ function do_obj_logon_req()
 
     local retmsg = ""
     if as2805msg ~= "" then retmsg = tcpsend(as2805msg) end
-    if retmsg ~= "NOERROR" then txn.tcperror = true; return do_obj_logon_nok(retmsg)
+    if retmsg ~= "NOERROR" then txn.localerror = true; return do_obj_logon_nok(retmsg)
     else return do_obj_logon_resp() end
 end
 
 function do_obj_logon_resp()
   local errmsg, rcvmsg = tcprecv()
   if errmsg ~= "NOERROR" then
-    txn.tcperror = true
+    txn.localerror = true
     return do_obj_logon_nok(errmsg)
   elseif not rcvmsg or rcvmsg == "" then
-    txn.tcperror = true
+    txn.localerror = true
 	return do_obj_logon_nok("NO_RESPONSE")
   else
     local msg_t = {"GET,12","GET,13","GETS,39","GETS,44","GETS,47","GET,48","GET,70" }
@@ -1449,13 +1446,13 @@ function tcprecv()
   return tcperrmsg,rcvmsg
 end
 
-function tcperrorcode(errmsg)
-  txn.tcperror = true
+function localerrorcode(errmsg)
+  txn.localerror = true
   local pstnerr_t = {LINE="W1",ANSWER="W2",BUSY="W3",NOPHONENUM="W4",CARRIER="W6",HOST="W6",SOCKET="W7",
                SHUTDOWN="W8",DHCP="W9",PPP_AUTH="W10",PPP_LCP="W11",IPCP="W12",ETH_SND_FAIL="W13",
                ETH_RCV_FAIL="W14",BATTERY="W15",COVERAGE="W16",SIM="W17",NETWORK="W18",PDP="W19",SIGNAL="W20",
                CONNECT="W21",GENERAL="W22",RCV_FAIL="W23",TIMEOUT="W24",ITIMEOUT="W25",MAC="W26",RCV_FAIL="W27",SND_FAIL="W28",
-			   NO_RESPONSE="W29", SWIPE_INSERT="W32"
+			   NO_RESPONSE="W29", SWIPE_INSERT="W32",CARD_REMOVED="W33"
 			   }
   return(pstnerr_t[errmsg])
 end
@@ -1660,7 +1657,7 @@ function get_emv_print_tags(tagprint)
 	local pan = f5a00 and string.match(f5a00,"%d+") or ""
 	pan = pan and #pan>0 and (string.rep("*",#pan - 4 ) .. string.sub(pan,-4)) or ""
 	prttags = prttags.."AID:\\R"..f4f.."\\n".." \\R"..terminal.StringToHex(f50,#f50).."\\n"
-	prttags = prttags..(tagprint and "AC" or "AAC") ..":\\R".. f9f26.."\\n"
+	prttags = prttags..(f9f27=="80" and "ARQC" or f9f27=="40" and "TC" or "AAC") ..":\\R".. f9f26.."\\n"
 	prttags = prttags.."CID:\\R".. f9f27.."\\n"
 	prttags = prttags.."IAD:\\R".. f9f10.."\\n"
 	prttags = prttags.."UN:\\R".. f9f37.."\\n"
@@ -1782,17 +1779,18 @@ function get_ipay_print(who,result_ok,result_str)
 	end
 	local prt_emv = ""
 	if txn.chipcard and not txn.emv.fallback and not txn.earlyemv then
-		local pds4f,pds50,pds9f26,pds9f12 
+		local pds4f,pds50,pds9f26,pds9f27,pds9f12 
 		if txn.ctls then
-		  pds4f,pds50,pds9f26,pds9f12 = get_value_from_tlvs("9F06"),get_value_from_tlvs("5000"),get_value_from_tlvs("9F26"),get_value_from_tlvs("9F12")
+		  pds4f,pds50,pds9f26,pds9f27,pds9f12 = get_value_from_tlvs("9F06"),get_value_from_tlvs("5000"),get_value_from_tlvs("9F26"),get_value_from_tlvs("9F27"),get_value_from_tlvs("9F12")
 		  if pds4f == "" then pds4f = get_value_from_tlvs("8400") end
 		else
-		  pds4f,pds50,pds9f26,pds9f12 = terminal.EmvGetTagData(0x4F00,0x5000,0x9F26,0x9F12)
+		  pds4f,pds50,pds9f26,pds9f27,pds9f12 = terminal.EmvGetTagData(0x4F00,0x5000,0x9F26,0x9F27,0x9F12)
 		end
 		local cname = ( pds9f12 ~= "" ) and pds9f12 or pds50 
 		cname = terminal.StringToHex(cname,#cname)
 		cname = string.gsub( cname, "%s+$", "")
-		prt_emv = "AID:\\R"..pds4f.."\\n".." \\R"..cname.."\\n".."TC:\\R "..pds9f26.."\\n"
+		local label_9f26 = (pds9f27 == "40" and "TC" or pds9f27 == "80" and "ARQC" or "AAC")  
+		prt_emv = "AID:\\R"..pds4f.."\\n".." \\R"..cname.."\\n"..label_9f26..":\\R "..pds9f26.."\\n"
 	end
 	cardinfo1 = "\\C"..txn.cardname .. "\\n\\C" .. s_pan .. " " .. cardentry .."\\n" 
 	local keep_cardinfo1 = "\\C"..txn.cardname .. "\\n\\C" .. string.rep(".",10) .. string.sub(s_pan,-4) .. " " .. cardentry .."\\n\\n" 

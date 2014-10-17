@@ -49,7 +49,7 @@ function do_obj_itaxi_abn_no()
 end
 
 function do_obj_itaxi_taxi_no()
-  local scrlines = ",THIS,ENTER TAXI NO,4,C;" .. "STRING," .. taxicfg.taxi_no .. ",,7,14,10,1;".."BUTTONA,THIS,ALPHA ,B,C;"
+  local scrlines = ",THIS,ENTER "..(taxicfg.hire and "HIRE CAR NO" or "TAXI NO")..",4,C;".. "STRING," .. taxicfg.taxi_no .. ",,7,14,10,1;".."BUTTONA,THIS,ALPHA ,B,C;"
   local screvent,scrinput = terminal.DisplayObject(scrlines,KEY.OK+KEY.CNCL+KEY.CLR,EVT.TIMEOUT,ScrnTimeout)
   
   if screvent == "KEY_OK" then
@@ -59,6 +59,31 @@ function do_obj_itaxi_taxi_no()
     return do_obj_itaxi_finish()
   elseif screvent == "KEY_CLR" then
     return do_obj_itaxi_abn_no()
+  else
+    return do_obj_itaxi_sign_on()
+  end
+end
+
+function do_obj_itaxi_select_driver()
+  taxicfg.serv_gst,taxicfg.comm = terminal.GetJsonValueInt("iTAXI_CFG","SERV_GST","COMM") -- this might have been switched to hire car value
+  if taxicfg.h_comm == 0 then taxicfg.h_comm = 300 end
+  if taxicfg.h_serv_gst == 0 then taxicfg.h_serv_gst = 1100 end
+  local line1 = "TAXI DRIVER"
+  local line2 = "HIRE CAR DRIVER"
+  local line1txt = "SERVICE FEE:"..tostring(taxicfg.serv_gst/100.0).."% COMM:"..tostring(taxicfg.comm/100.0).."%"
+  local line2txt = "SERVICE FEE:"..tostring(taxicfg.h_serv_gst/100.0).."% COMM:"..tostring(taxicfg.h_comm/100.0).."%"
+  local scrlines = ",THIS,ENTER DRIVER TYPE,1,C;" .. "BUTTONL_1,THIS,"..line1..",P113,C;"..",THIS,"..line1txt..",6,C;".. "BUTTONL_2,THIS,"..line2..",P236,C;"..",THIS,"..line2txt..",12,C;"
+  local scrkeys = KEY.CNCL
+  local screvent,scrinput = terminal.DisplayObject(scrlines,scrkeys,EVT.TIMEOUT,ScrnTimeout)
+  taxicfg.hire = nil
+  if screvent == "BUTTONL_1" then
+    return do_obj_itaxi_taxi_no()
+  elseif screvent == "BUTTONL_2" then
+	taxicfg.comm = taxicfg.h_comm
+	taxicfg.serv_gst = taxicfg.h_serv_gst
+	taxicfg.hire = true
+    terminal.SetJsonValue("iTAXI_CFG","DRIVERTYPE","HIRE")
+    return do_obj_itaxi_taxi_no()
   else
     return do_obj_itaxi_sign_on()
   end
@@ -224,9 +249,9 @@ function do_obj_itaxi_meter()
       local amt = tonumber(scrinput) or 0
       if scrinput == "" or amt < 500 or amt >10000 then
         scrlines = "WIDELBL,THIS,AMOUNT IS "..(amt > 10000 and "GREATER THAN $100 ?" or "LESS THAN $5?") ..",5,C;".."BUTTONS_1,THIS,YES,8,10;".. "BUTTONS_2,THIS,NO,8,33;"
-        scrkeys  = KEY.CNCL
+        scrkeys  = KEY.CNCL + KEY.OK
         screvent = terminal.DisplayObject(scrlines,scrkeys,EVT.TIMEOUT,ScrnTimeout)
-        if screvent == "BUTTONS_1" then ok = true else ok = false end
+        if screvent == "KEY_OK" or screvent == "BUTTONS_1" then ok = true else ok = false end
       end
       if ok then
         taxi.meter = tonumber(scrinput)
@@ -260,18 +285,75 @@ function do_obj_itaxi_other_charges()
   end
 end
 
+function round_near5(num_input)
+  local iret = 0
+  local num10 = math.floor(num_input/10)*10
+  local num_left = num_input - num10
+  if num_left >= 7.50 then iret = num10 + 10
+  elseif num_left < 2.5 then iret = num10
+  else iret = num10 + 5 end
+  return (iret)
+end
+
+function do_obj_itaxi_tip()
+  local amt = taxi.subtotal + ( not taxi.cash and taxi.serv_gst or 0)
+  local line1 = "TOTAL FARE:" .. string.format("%10s", string.format( "$%.2f", amt/100))
+  local amt2 = math.floor(amt/100 + 2.50)*100
+  local amt5 = round_near5(amt/100+ 5)*100
+  local amt10 =round_near5(amt/100+10)*100
+
+  local s1,s2,s3 = string.format("$%.0f",amt2/100),string.format("$%.0f",amt5/100),string.format("$%.0f",amt10/100)
+  if #s1 ==2 then s1 = " "..s1 end;if #s2 ==2 then s2 = " "..s2 end;if #s3 ==2 then s3 = " "..s3 end
+  if #s1 ==3 then s1 = s1.." " end;if #s2 ==3 then s2 = s2.." " end;if #s3 ==3 then s3 = s3.." " end
+  local scrlines = "WIDELBL,THIS," .. line1 ..",1,5;" 
+    .. ",THIS,  WOULD YOU LIKE TO TIP YOUR   DRIVER? ROUND YOUR TOTAL TO:,3,C;"   
+    .."BUTTONS_1,THIS,"..s1..",7,4;"
+    .."BUTTONS_2,THIS,"..s2..",7,20;"
+    .."BUTTONS_3,THIS,"..s3..",7,36;"
+    .."BUTTONL_4,THIS,".."CONTINUE"..",B,C;"
+
+  local scrkeys = KEY.OK+KEY.CNCL+KEY.CLR
+  local screvent,scrinput = terminal.DisplayObject(scrlines,scrkeys,EVT.TIMEOUT,ScrnTimeout)
+
+  taxi.tip = 0
+  local tip_gst = 0
+  if screvent == "BUTTONL_4" then
+  elseif screvent == "BUTTONS_1" then
+		tip_gst = amt2 - amt
+  elseif screvent == "BUTTONS_2" then
+		tip_gst = amt5 - amt
+  elseif screvent == "BUTTONS_3" then
+		tip_gst = amt10 - amt
+  end
+  if tip_gst > 0 then 
+    local pct = 1+ tonumber (taxicfg.serv_gst)/10000
+    taxi.tip = taxi.cash and tip_gst or math.floor( tip_gst/pct + 0.5)
+    taxi.meter = taxi.meter + taxi.tip
+    taxi.subtotal = taxi.meter + taxi.otherchg
+    taxi.serv_gst = taxi.serv_gst + tip_gst - taxi.tip
+  end
+  
+  if screvent == "KEY_CLR" then
+    return do_obj_itaxi_meter
+  elseif screvent == "TIME" or screvent == "CANCEL" then
+    return do_obj_itaxi_finish
+  else return nil
+  end
+end
+
 function ctls_tran()
     local amt = taxi.subtotal+taxi.serv_gst
     local translimit,cvmlimit=0,0
     local nosaf = 0 --toomany_saf() and 1 or 0
     local tr1,tr2,tlvs,emvres = terminal.CtlsCall(0,amt,nosaf)
+	terminal.DebugDisp("boyang emvres "..emvres)
 
     if tr2 ~= "" then
         if taxicfg.ctls_slimit > 0 and amt > taxicfg.ctls_slimit then tr2 = ""; emvres = "-1025"; end
     elseif tlvs ~= "" then
 		-- limit check is done in f700 ctlsemvcfg.txt
-        local aid = get_value_from_tlvs("9F06",tlvs)
-		if string.sub(tag_aid,1,10) == "A000000384" and config.ehub == "YES" then
+        --local aid = get_value_from_tlvs("9F06",tlvs)
+		--if string.sub(tag_aid,1,10) == "A000000384" and config.ehub == "YES" then
         --translimit,cvmlimit =terminal.CTLSEmvGetLimit(aid) --boyang
         --if string.sub(aid,1,10)=="A000000003" and amt >= translimit or amt > translimit then tlvs = ""; emvres = "-1025" end --TESTING --boyang
        taxi.cvmlimit = cvmlimit
@@ -299,8 +381,8 @@ function ctls_tran()
         taxi.tlvs = tlvs
         taxi.chipcard = true 
         return do_obj_itaxi_pay_swipe()        
-    elseif emvres == "99" or emvres =="-1025" then 
-        if emvres ~= "99" then terminal.DisplayObject("WIDELBL,THIS,NO CONTACTLESS,3,C;".. 
+    elseif emvres == "99" or emvres == "10" or emvres =="-1025" then 
+        if emvres == "-1025" then terminal.DisplayObject("WIDELBL,THIS,NO CONTACTLESS,3,C;".. 
           "WIDELBL,THIS,FOR AMOUNT >".. string.format("%.2f",translimit/100.0) ..",5,C;",KEY.OK,EVT.TIMEOUT,2000) end
         return do_obj_itaxi_paymentmethod()
     elseif emvres == "-1001" or emvres =="-1002" then 
@@ -344,35 +426,19 @@ function do_obj_itaxi_paymentmethod(noinsert)
     end
 end
 
-function do_obj_itaxi_pay()
-  taxi.serv_gst = 0
-  if taxicfg.serv_gst > 0 then taxi.serv_gst = math.floor(taxi.subtotal / 10000 * tonumber (taxicfg.serv_gst)+0.5) end
-  local line1 = "PICK UP:" .. string.format("%13s", taxi.pickup )
-  local line2 = "DROP OFF:" .. string.format("%12s", taxi.dropoff )
-  local line3 = "TOTAL FARE:" .. string.format("%10s", string.format( "$%.2f", taxi.subtotal/100))
-  local line4,line5,line6,line7 = "103","104","105","163"
-  local scrlines = ",THIS," .. line1 ..",0,5;" .. ",THIS," .. line2 ..",1,5;" .. "WIDELBL,THIS," .. line3 ..",3,5;" 
-              .. ",THIS,IS THIS CORRECT?,6,C;"   .. "BUTTONS_1,iTAXI_T," .. line6 ..",B,10;"
-          .. "BUTTONS_2,iTAXI_T," .. line7 ..",B,33;"
-  
-  local scrkeys = KEY.OK+KEY.CNCL+KEY.CLR
-  local screvent,scrinput = terminal.DisplayObject(scrlines,scrkeys,EVT.TIMEOUT,ScrnTimeout)
-  
-  check_logon_ok()
-  if screvent == "KEY_OK" or screvent == "BUTTONS_1" then
-    local ret = 0
-	if taxi.cash then
-        local scrlines1 = "WIDELBL,,37,2,C;" .."WIDELBL,,26,4,C;"
-        terminal.DisplayObject(scrlines1,0,0,0)
-    
-          local timestr = terminal.Time( "DD/MM/YY        hh:mm:ss" )
-          local otherchgstr = ""
-          if taxi.otherchg > 0 then otherchgstr = "OTHR CHRGS:\\R".. string.format("$%.2f",taxi.otherchg/100) .."\\n" end
-          local auth_no,abn_no,taxi_no =  taxicfg.auth_no,taxicfg.abn_no,taxicfg.taxi_no
-		  local abn_str = abn_no and (taxi.subtotal > 7500 or taxi.subtotal<=7500 and not taxicfg.abn_skip) and ( "DRVR ABN:\\R" .. abn_no .."\\n" ) or ""
-          local header,mtrailer,ctrailer = get_itaxi_print()
 
-          local prtvalue= header .. "\\CCASH RECEIPT\\n" ..
+function do_obj_itaxi_cash()
+  local scrlines1 = "WIDELBL,,37,2,C;" .."WIDELBL,,26,4,C;"
+  terminal.DisplayObject(scrlines1,0,0,0)
+
+  local timestr = terminal.Time( "DD/MM/YY        hh:mm:ss" )
+  local otherchgstr= ""
+  if taxi.otherchg > 0 then otherchgstr = "OTHR CHRGS:\\R".. string.format("$%.2f",taxi.otherchg/100) .."\\n" end
+  local auth_no,abn_no,taxi_no =  taxicfg.auth_no,taxicfg.abn_no,taxicfg.taxi_no
+  local abn_str = abn_no and (taxi.subtotal > 7500 or taxi.subtotal<=7500 and not taxicfg.abn_skip) and ( "DRVR ABN:\\R" .. abn_no .."\\n" ) or ""
+  local header,mtrailer,ctrailer = get_itaxi_print()
+
+  local prtvalue= header .. "\\CCASH RECEIPT\\n" ..
             "\\4\\w------------------------------------------\\n" ..
             "\\fMERCHANT ID:\\R" .. string.sub(config.mid,-8) .. "\\n" ..
             "\\fTERMINAL ID:\\R" .. config.tid .. "\\n" ..
@@ -390,11 +456,31 @@ function do_obj_itaxi_pay()
             "\\fTOTAL:\\R" .. string.format("$%.2f", taxi.subtotal/100) .. "\\n\\n" ..
             "\\C** CASH RECEIPT **\\n\\n" .. ctrailer
 
-          terminal.Print(prtvalue,true)
-          checkPrint(prtvalue)
-          return do_obj_itaxi_finish()
- --   elseif not check_logon_ok() then
- --       return do_obj_itaxi_finish()
+  terminal.Print(prtvalue,true)
+  checkPrint(prtvalue)
+  return do_obj_itaxi_finish()
+end
+
+function do_obj_itaxi_pay()
+  taxi.serv_gst = 0
+  if taxicfg.serv_gst > 0 then taxi.serv_gst = math.floor(taxi.subtotal / 10000 * tonumber (taxicfg.serv_gst)+0.5) end
+  local line1 = "PICK UP:" .. string.format("%13s", taxi.pickup )
+  local line2 = "DROP OFF:" .. string.format("%12s", taxi.dropoff )
+  local line3 = "TOTAL FARE:" .. string.format("%10s", string.format( "$%.2f", taxi.subtotal/100))
+  local line4,line5,line6,line7 = "103","104","105","163"
+  local scrlines = ",THIS," .. line1 ..",0,5;" .. ",THIS," .. line2 ..",1,5;" .. "WIDELBL,THIS," .. line3 ..",3,5;" 
+              .. ",THIS,IS THIS CORRECT?,6,C;"   .. "BUTTONS_1,iTAXI_T," .. line6 ..",B,10;"
+          .. "BUTTONS_2,iTAXI_T," .. line7 ..",B,33;"
+  
+  local scrkeys = KEY.OK+KEY.CNCL+KEY.CLR
+  local screvent,scrinput = terminal.DisplayObject(scrlines,scrkeys,EVT.TIMEOUT,ScrnTimeout)
+  
+  check_logon_ok()
+  if screvent == "KEY_OK" or screvent == "BUTTONS_1" then
+    local ret = do_obj_itaxi_tip()
+    if ret then return ret()
+    elseif taxi.cash then
+      return do_obj_itaxi_cash()
     elseif taxi.ctls then
         return ctls_tran()
     elseif not taxi.chipcard and not taxi.track2 then
@@ -624,7 +710,8 @@ function do_obj_itaxi_pay_done(rtnvalue)
 
   local taxi_nextfile = "TAXI"..taxi_next
   taxi.current_taxi_idx = taxi_next
-  local taxistr = "{TYPE:DATA,NAME:"..taxi_nextfile..",GROUP:WBC,VERSION:3.0,INV:"..inv..",STAN:"..ecrd.INV..",TXNTOTAL:"..ecrd.AMT..",SUBTOTAL:"..ecrd.KEEP..",HEADER:".. ecrd.HEADER..",HEADER_OK:"..ecrd.HEADER_OK..",MRECEIPT:"..ecrd.MRECEIPT..",TRAILER:"..ecrd.MTRAILER..",CRCPT:"..ecrd.CRECEIPT.."}"
+  local tipstr = taxi.tip and taxi.tip > 0 and (",TIP:"..taxi.tip) or ""
+  local taxistr = "{TYPE:DATA,NAME:"..taxi_nextfile..",GROUP:WBC,VERSION:3.0,INV:"..inv..",STAN:"..ecrd.INV..",TXNTOTAL:"..ecrd.AMT..",SUBTOTAL:"..ecrd.KEEP..",HEADER:".. ecrd.HEADER..",HEADER_OK:"..ecrd.HEADER_OK..",MRECEIPT:"..ecrd.MRECEIPT..",TRAILER:"..ecrd.MTRAILER..",CRCPT:"..ecrd.CRECEIPT..tipstr.."}"
   
   terminal.NewObject(taxi_nextfile,taxistr)
   terminal.SetArrayRange("TAXI",taxi_min,taxi_next+1)
@@ -632,7 +719,7 @@ function do_obj_itaxi_pay_done(rtnvalue)
   local taxitxn_nextfile = "iTAXI_TXN"..taxitxn_next
   local account = ( ecrd.ACCOUNT == "4" and "CR" or ( ecrd.ACCOUNT=="1" and "SAV" or "CHQ"))
   local dt = string.sub(ecrd.DATE,3,4)..string.sub(ecrd.DATE,1,2) --ddmm
-  local taxitxnstr = "{TYPE:DATA,NAME:iTAXI_TXN"..taxitxn_next..",GROUP:WBC,VERSION:3.0,DATE:"..dt..",TIME:"..ecrd.TIME..",TID:"..ecrd.TID..",DRIVER:"..taxicfg.auth_no..",ABN:"..taxicfg.abn_no..",TAXI:"..taxicfg.taxi_no..",STAN:"..ecrd.INV..",INV:"..inv..",METER:"..taxi.meter..",FARE:"..ecrd.KEEP..",TOTAL:"..ecrd.AMT..",COMM:"..taxicfg.comm..",PICK_UP:"..taxi.pickup..",DROP_OFF:"..taxi.dropoff..",PAN:TODO,CARDNO:"..ecrd.CARDNO..",ACCOUNT:"..account..",RC:"..ecrd.RC..",AUTHID:"..ecrd.AUTHID.."}"
+  local taxitxnstr = "{TYPE:DATA,NAME:iTAXI_TXN"..taxitxn_next..",GROUP:WBC,VERSION:3.0,DATE:"..dt..",TIME:"..ecrd.TIME..",TID:"..ecrd.TID..",DRIVER:"..taxicfg.auth_no..",ABN:"..taxicfg.abn_no..",TAXI:"..taxicfg.taxi_no..",STAN:"..ecrd.INV..",INV:"..inv..",METER:"..taxi.meter..",FARE:"..ecrd.KEEP..",TOTAL:"..ecrd.AMT..",COMM:"..taxicfg.comm..",PICK_UP:"..taxi.pickup..",DROP_OFF:"..taxi.dropoff..",PAN:TODO,CARDNO:"..ecrd.CARDNO..",ACCOUNT:"..account..",RC:"..ecrd.RC..",AUTHID:"..ecrd.AUTHID..tipstr.."}"
   terminal.NewObject(taxitxn_nextfile,taxitxnstr)
   terminal.SetArrayRange("iTAXI_TXN","",taxitxn_next+1)
   taxi.current_taxitxn_idx = taxitxn_next
@@ -800,14 +887,14 @@ end
 function do_obj_itaxi_totals()
   local header,trailer = "","\\n\\4\\W\\iINV No.\\RFARE\\n\\4\\W"
   local taxi_min,taxi_next= terminal.GetArrayRange("TAXI")
-  local subtotal_d,num_d = 0,0
+  local subtotal_d,num_d,tips_d = 0,0,0
   local inv,last_inv,batch = taxicfg.inv,taxicfg.last_inv,taxicfg.batch  
 
   do_obj_saf_rev_start()
   local rev_exist = config.safsign and string.find(config.safsign,"+")
   local saf_exist = config.safsign and string.find(config.safsign,"*")
   if (saf_exist or rev_exist) then
-    local scrlines = "WIDELBL,THIS,"..(rev_exist and "REVERSAL" or "")..(saf_exist and " SAF" or "") ..",2,C,;".."WIDELBL,THIS,PENDING,3,C;"
+    scrlines = "WIDELBL,THIS,"..(rev_exist and "REVERSAL" or "")..(saf_exist and " SAF" or "") ..",2,C,;".."WIDELBL,THIS,PENDING,3,C;"
     terminal.DisplayObject(scrlines,KEY.OK,EVT.TIMEOUT,2000)
   end
 
@@ -824,15 +911,17 @@ function do_obj_itaxi_totals()
     
   for i = taxi_next-1,taxi_min,-1 do
       local taxifile = "TAXI" .. i
-      local inv,subtotal,stan=terminal.GetJsonValue(taxifile,"INV","SUBTOTAL","STAN")
+      local inv,subtotal,stan,tip=terminal.GetJsonValue(taxifile,"INV","SUBTOTAL","STAN","TIP")
       if #inv >0 and tonumber(inv)==tonumber(last_inv) then break 
       elseif inv =="" or subtotal=="" then
       else 
         local offline_pending = false
         if stan ~= "" and #saf_inv > 0 then for _,v in ipairs(saf_inv) do if tonumber(v) == tonumber(stan) then offline_pending = true end end end
         subtotal_d = subtotal_d + tonumber(subtotal)
+        local itip = (tip=="" and 0 or tonumber(tip))
+        tips_d = tips_d + itip
         num_d = num_d + 1
-        trailer = trailer .. ( offline_pending and "*" or "") ..string.format("%06s",inv) .."\\R" ..string.format("$%.2f",tonumber(subtotal)/100) .."\\n"
+        trailer = trailer .. ( offline_pending and "*" or "") ..string.format("%06s",inv) .."\\R" ..string.format("$%.2f",tonumber(subtotal-itip)/100) .."\\n"
       end
   end
 
@@ -845,6 +934,7 @@ function do_obj_itaxi_totals()
     s1 = string.format("%-10s%16s","TO INV:","#"..tostring(tonumber(inv)-1))
     scrlines = scrlines .. ",THIS,"..s1..",2,3;"
   end
+  if tips_d>0 then subtotal_d = subtotal_d - tips_d end
   s1 = string.format("%-10s%16s","TOTAL:",string.format("$%.2f",subtotal_d/100))
   scrlines = scrlines.. ",THIS,"..s1 ..",3,3;"
   scrlines = scrlines.. "WIDELBL,iTAXI_T,110,6,C;" .."WIDELBL,iTAXI_T,111,7,C;" .."BUTTONS_YES,iTAXI_T,105,B,10;"  .."BUTTONS_NO,iTAXI_T,163,B,33;" 
@@ -860,12 +950,14 @@ function do_obj_itaxi_totals()
  
       local comm,header1,header0,auth_no,abn_no,taxi_no = taxicfg.comm,taxicfg.header1,taxicfg.header0,taxicfg.auth_no,taxicfg.abn_no,taxicfg.taxi_no
       local hdr1 = header1 ..string.format(" %.2f",taxicfg.comm/100) .."%"
-      local comm_d = math.floor(subtotal_d * tonumber(comm)/ 10000)
-      local payable_d = subtotal_d + comm_d
+      local comm_d = math.floor((subtotal_d+tips_d) * tonumber(comm)/ 10000)
+      local payable_d = subtotal_d+tips_d + comm_d
       local batch4 = string.sub( string.format("%06s",batch),3,6)
       local mytime = terminal.Time( "DDMMYYhhmm")
+	  local tipstr = tips_d > 0 and ( "TIPS:\\R"..string.format("$%.2f",tips_d/100).."\\n") or ""
       trailer = trailer .." \\R----------\\n" .."TOTAL FARES:\\R"..string.format("$%.2f",subtotal_d/100).."\\n("..
-        num_d.." TRANSACTIONS)\\n\\nDRIVER BONUS:\\R"..string.format("$%.2f",comm_d/100).."\\n(GST INCL.)\\nDRIVER PAY:\\R"..string.format("$%.2f",payable_d/100).."\\n" .."\\4\\W\\C"..hdr1..
+        num_d.." TRANSACTIONS)\\n\\n"..tipstr.."DRIVER BONUS:\\R"..string.format("$%.2f",comm_d/100).."\\n(GST INCL.)\\nDRIVER PAY:\\R"..string.format("$%.2f",payable_d/100).."\\n"
+		.."\\4\\W\\C"..hdr1..
         "\\n\\*"..string.format("%04s",batch4)..config.tid..string.format("%06d",payable_d)..mytime..
         "\\3\\C"..string.format("%04s",batch4)..config.tid..string.format("%06d",payable_d)..mytime .."\\n"
       header = "\\ggmcabs.bmp\\n\\4\\W\\C"..header0.."\\n\\C"..hdr1.."\\n\\n\\CDRIVER NO:\\R"..auth_no.."\\n\\CDRVR ABN:\\R"..abn_no.."\\n\\CTAXI NO:\\R" ..
@@ -973,7 +1065,7 @@ end
 function init_taxi_cfg()
   taxicfg.header0,taxicfg.header1,taxicfg.trailer0,taxicfg.trailer1,taxicfg.trailer2,taxicfg.trailer3,taxicfg.abn_no,taxicfg.abn,taxicfg.taxi_no,taxicfg.auth_no,taxicfg.inv,taxicfg.last_inv,taxicfg.batch= 
   terminal.GetJsonValue("iTAXI_CFG","HEADER0","HEADER1","TRAILER0","TRAILER1","TRAILER2","TRAILER3","ABN_NO","ABN","TAXI_NO","AUTH_NO","INV","LAST_INV","BATCH")
-  taxicfg.comm,taxicfg.serv_gst,taxicfg.day,taxicfg.month,taxicfg.daily,taxicfg.monthly,taxicfg.day_limit,taxicfg.month_limit,taxicfg.ctls_slimit =terminal.GetJsonValueInt("iTAXI_CFG","COMM","SERV_GST","DAY","MONTH","DAILY","MONTHLY","DAY_LIMIT","MONTH_LIMIT","CTLS_S_LIMIT")
+  taxicfg.comm,taxicfg.serv_gst,taxicfg.day,taxicfg.month,taxicfg.daily,taxicfg.monthly,taxicfg.day_limit,taxicfg.month_limit,taxicfg.ctls_slimit,taxicfg.h_serv_gst,taxicfg.h_comm =terminal.GetJsonValueInt("iTAXI_CFG","COMM","SERV_GST","DAY","MONTH","DAILY","MONTHLY","DAY_LIMIT","MONTH_LIMIT","CTLS_S_LIMIT","HIRE_SERV_GST","HIRE_COMM")
   taxicfg.header = "\\ggmcabs.bmp" .."\\f\\C" .. taxicfg.header0 .. "\\n" .."\\C" .. taxicfg.header1 .. "\\n"
   local cfgtrailer2 = ( taxicfg.trailer2 == "" and "" or ("\\4\\H\\C" .. taxicfg.trailer2 .. "\\n"))
   local cfgtrailer3 = ( taxicfg.trailer3 == "" and "" or ("\\4\\H\\C" .. taxicfg.trailer3 .. "\\n"))

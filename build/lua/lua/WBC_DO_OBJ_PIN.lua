@@ -3,7 +3,7 @@ function do_obj_pin()
 
   if txn.pan then return do_obj_transdial()
   elseif txn.ctls and txn.chipcard and config.ctls_cvm and not hasbit( tonumber(config.ctls_cvm,16),bit(7))  then do_obj_transdial()
-  elseif txn.ctls and txn.chipcard and txn.ctlsPin ~= "2" and txn.ctlsPin ~= "3" then 
+  elseif txn.ctls and txn.ctlsPin and txn.ctlsPin ~= "2" and txn.ctlsPin ~= "3" then 
   	return do_obj_transdial()
   elseif txn.chipcard and not txn.earlyemv and not txn.emv.fallback and not txn.ctls 
 	then txn.pinblock_flag = "TODO";return do_obj_transdial()

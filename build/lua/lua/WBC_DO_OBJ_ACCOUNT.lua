@@ -11,7 +11,7 @@ function do_obj_account()
   local ok,desc = get_cardinfo()
   local acct = ""
   if ok and txn.chipcard and not txn.fallback and not txn.earlyemv then
-	if txn.ctls then
+	if txn.ctls == "CTLS_E" then
 	  local f9f06 = get_value_from_tlvs("9F06")
 	  local cfgfile = terminal.EmvFindCfgFile(f9f06)
 	  if cfgfile ~="" then acct = terminal.GetJsonValue(cfgfile,"CTLS_ACCT") end
@@ -29,7 +29,7 @@ function do_obj_account()
 		scrlines = "WIDELBL,THIS,"..txn.account.." ACCOUNT,2,C;".."WIDELBL,,26,4,C;"
 		terminal.DisplayObject(scrlines,0,EVT.TIMEOUT,ScrnTimeoutHF)
 		return do_obj_pin()
-  elseif txn.ctls or txn.cardname == "AMEX" or txn.cardname == "DINERS" or txn.cardname =="JCB" or txn.moto or txn.pan and #txn.pan > 10 then
+  elseif txn.ctls or txn.cardname == "AMEX" or txn.cardname == "DINERS" or txn.cardname =="JCB" or txn.moto or txn.pan then
 	txn.account = "CREDIT" 
 	scrlines = "WIDELBL,,119,2,C;".."WIDELBL,,26,3,C;"
 	terminal.DisplayObject(scrlines,0,EVT.TIMEOUT,ScrnTimeoutHF)

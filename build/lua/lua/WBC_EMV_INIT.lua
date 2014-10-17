@@ -10,6 +10,7 @@ function emv_init()
 		local eftpos = (tag_aid and string.sub(tag_aid,1,10) == "A000000384") 
 		if eftpos and config.ehub == "YES" then txn.eftpos = true end
 		if eftpos_mcard == 1 then txn.eftpos_mcard = 1 end
+		terminal.DebugDisp("txn.eftpos_mcard = ".. (txn.eftpos_mcard or "empty"))
 	end
     if ok ~= 0 and config.fallback and ok ~= 103 --[[CARD_REMOVED]] and ok ~= 104 --[[CARD_BLOCKED]] and ok ~= 105 --[[APPL_BLOCKED]] and ok ~= 110 --[[TRANS_CANCELLED]] and ok ~= 130 --[[INVALID_PARAMETER]] then
       txn.emv.fallback = true

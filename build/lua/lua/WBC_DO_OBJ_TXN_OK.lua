@@ -1,6 +1,6 @@
 function do_obj_txn_ok()
 	local pinchked = not txn.ctls and txn.chipcard and txn.offlinepin or txn.pinblock or txn.ctls and txn.chipcard
-    local signflag =  not txn.moto and ( txn.ctlsPin == "1" or txn.ctlsPin == "3" or txn.rc == "08" or (txn.chipcard and terminal.EmvGlobal("GET","SIGN")) or txn.pan or not pinchked) 
+    local signflag =  not txn.moto and ( txn.ctlsPin == "1" or txn.ctlsPin == "3" or txn.rc == "08" or (txn.chipcard and terminal.EmvGlobal("GET","SIGN")) or txn.pan or not pinchked and not txn.eftpos) 
 	local scrlines,resultstr,resultstr_nosign = "","",""
 	if txn.rc == "08" then 
 		scrlines =  "WIDELBL,,147,2,C;" .."WIDELBL,,54,3,C;" 

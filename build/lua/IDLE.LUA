@@ -167,7 +167,7 @@ function init_config()
   if config.roc == "" then config.roc = "000000"; terminal.SetJsonValue("CONFIG","ROC", config.roc) end
   if config.stan == "" then config.stan= "000001"; terminal.SetJsonValue("CONFIG","STAN", config.stan) end
   config.hip,config.port,config.apn = terminal.GetJsonValue("CONFIG","HIP0","PORT0","APN")
-  config.sw_ver,config.aiic = terminal.GetJsonValue("IRIS_CFG","VERSION","AIIC") 
+  config.sw_ver,config.aiic = terminal.GetJsonValue("ITAXI_CFG","VERSION"),terminal.GetJsonValue("IRIS_CFG","AIIC") 
   if config.sw_ver == "" then config.sw_ver = "10" else config.sw_ver = string.sub(config.sw_ver,-2) end
   if config.aiic == "" then config.aiic = "560192" end
   config.timeadjust = terminal.GetJsonValue("iTAXI_CFG","RISTIMEOFFSET")

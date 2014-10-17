@@ -46,7 +46,7 @@ function get_emv_print_tags(tagprint)
 	local pan = f5a00 and string.match(f5a00,"%d+") or ""
 	pan = pan and #pan>0 and (string.rep("*",#pan - 4 ) .. string.sub(pan,-4)) or ""
 	prttags = prttags.."AID:\\R"..f4f.."\\n".." \\R"..terminal.StringToHex(f50,#f50).."\\n"
-	prttags = prttags..(tagprint and "AC" or "AAC") ..":\\R".. f9f26.."\\n"
+	prttags = prttags..(f9f27=="80" and "ARQC" or f9f27=="40" and "TC" or "AAC") ..":\\R".. f9f26.."\\n"
 	prttags = prttags.."CID:\\R".. f9f27.."\\n"
 	prttags = prttags.."IAD:\\R".. f9f10.."\\n"
 	prttags = prttags.."UN:\\R".. f9f37.."\\n"
