@@ -6,13 +6,11 @@ function do_obj_transdial()
     if not txn.earlyemv then
 	  if terminal.EmvIsCardPresent() then
 		local acc = (txn.account=="SAVINGS" and 0x10 or txn.account == "CHEQUE" and 0x20 or txn.account=="CREDIT" and 0x30)
-		terminal.DebugDisp("boyang transdial")
 		if emvret == 0 then emvret = terminal.EmvSetAccount(acc) end
 		if emvret == 0 then emvret = terminal.EmvDataAuth() end
 		if emvret == 0 then emvret = terminal.EmvProcRestrict() end
 		if emvret == 0 then emvret = terminal.EmvCardholderVerify() end
  		if emvret == 0 then emvret = terminal.EmvProcess1stAC() end
-
  		if emvret == 137 then --ONLINE_REQUEST
 		elseif emvret == 150 or emvret == 133  then -- TRANS_APPROVED or OFFLINE_APPROVED
 		elseif emvret == 151 or emvret == 134  then -- TRANS_DECLINED or OFFLINE_DECLINED

@@ -77,7 +77,6 @@ function prepare_txn_req()
 
 	fld47 = fld47 .."WCV"..wcv.."\\"
     if txn.chipcard and txn.emv.fallback and posentry == "801" then fld47 = fld47 .."FCR\\" end
-	terminal.DebugDisp("boyang fld47 = ".. fld47)
     table.insert(msg_flds,"47:" ..terminal.HexToString(fld47))
 
 	local _,_,olpin = string.find(fld47, "WCV2")

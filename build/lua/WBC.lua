@@ -35,7 +35,6 @@ function emv_init()
 		local eftpos = (tag_aid and string.sub(tag_aid,1,10) == "A000000384") 
 		if eftpos and config.ehub == "YES" then txn.eftpos = true end
 		if eftpos_mcard == 1 then txn.eftpos_mcard = 1 end
-		terminal.DebugDisp("txn.eftpos_mcard = ".. (txn.eftpos_mcard or "empty"))
 	end
     if ok ~= 0 and config.fallback and ok ~= 103 --[[CARD_REMOVED]] and ok ~= 104 --[[CARD_BLOCKED]] and ok ~= 105 --[[APPL_BLOCKED]] and ok ~= 110 --[[TRANS_CANCELLED]] and ok ~= 130 --[[INVALID_PARAMETER]] then
       txn.emv.fallback = true
@@ -417,15 +416,7 @@ end
 
 function do_obj_offline_check(revrequired)
 	local FAILED_TO_CONNECT = 3
-
-			  local a = terminal.EmvGetTagData(0x9500)
-			  terminal.DebugDisp("boyang tvr before offline check= "..a)
-			  terminal.EmvSetTagData(0x9500,"0"..string.sub(a,2))
-			  a = terminal.EmvGetTagData(0x9500)
-			  terminal.DebugDisp("boyang tvr before offline check2= "..a)
-
 	local ret = config.no_offline and -1 or terminal.EmvUseHostData(FAILED_TO_CONNECT,"")
-			  terminal.DebugDisp("boyang tvr after offline check= "..(terminal.EmvGetTagData(0x9500))..",ret = "..ret)
 	if ret == 0 then 
 		txn.rc = "Y3"
 		--prepare 0220
@@ -469,13 +460,11 @@ function do_obj_transdial()
     if not txn.earlyemv then
 	  if terminal.EmvIsCardPresent() then
 		local acc = (txn.account=="SAVINGS" and 0x10 or txn.account == "CHEQUE" and 0x20 or txn.account=="CREDIT" and 0x30)
-		terminal.DebugDisp("boyang transdial")
 		if emvret == 0 then emvret = terminal.EmvSetAccount(acc) end
 		if emvret == 0 then emvret = terminal.EmvDataAuth() end
 		if emvret == 0 then emvret = terminal.EmvProcRestrict() end
 		if emvret == 0 then emvret = terminal.EmvCardholderVerify() end
  		if emvret == 0 then emvret = terminal.EmvProcess1stAC() end
-
  		if emvret == 137 then --ONLINE_REQUEST
 		elseif emvret == 150 or emvret == 133  then -- TRANS_APPROVED or OFFLINE_APPROVED
 		elseif emvret == 151 or emvret == 134  then -- TRANS_DECLINED or OFFLINE_DECLINED
@@ -740,7 +729,6 @@ function prepare_txn_req()
 
 	fld47 = fld47 .."WCV"..wcv.."\\"
     if txn.chipcard and txn.emv.fallback and posentry == "801" then fld47 = fld47 .."FCR\\" end
-	terminal.DebugDisp("boyang fld47 = ".. fld47)
     table.insert(msg_flds,"47:" ..terminal.HexToString(fld47))
 
 	local _,_,olpin = string.find(fld47, "WCV2")
@@ -867,7 +855,6 @@ function do_obj_txn_resp()
     errmsg,fld12,fld13,fld15,fld37,fld38,fld39,fld44,fld47,fld48,fld55,fld64 = terminal.As2805Break( rcvmsg, msg_t )
     if fld12 and fld13 then txn.time = fld13..fld12 end
     if fld38 and #fld38>0 then txn.authid = fld38 end
---terminal.DebugDisp("fld39="..fld39)
     if fld39 and #fld39>0 then txn.rc = fld39 end
     if fld44 and #fld44>0 then txn.rc_desc = fld44 end
 	if fld47 and #fld47>0 then hosttag_process(fld47) end
@@ -1639,7 +1626,6 @@ function get_emv_print_tags(tagprint)
 			f5f34 = get_value_from_tlvs("5F34")
 			f9f33 = get_value_from_tlvs("9F33")
 			f9b00 = get_value_from_tlvs("9B00")
-
 			tac_default,tac_denial,tac_online= terminal.CTLSEmvGetTac(f4f)
 
 			iac_default = get_value_from_tlvs("9F0D")
@@ -1657,28 +1643,28 @@ function get_emv_print_tags(tagprint)
 	local pan = f5a00 and string.match(f5a00,"%d+") or ""
 	pan = pan and #pan>0 and (string.rep("*",#pan - 4 ) .. string.sub(pan,-4)) or ""
 	prttags = prttags.."AID:\\R"..f4f.."\\n".." \\R"..terminal.StringToHex(f50,#f50).."\\n"
-	prttags = prttags..(f9f27=="80" and "ARQC" or f9f27=="40" and "TC" or "AAC") ..":\\R".. f9f26.."\\n"
-	prttags = prttags.."CID:\\R".. f9f27.."\\n"
-	prttags = prttags.."IAD:\\R".. f9f10.."\\n"
-	prttags = prttags.."UN:\\R".. f9f37.."\\n"
-	prttags = prttags.."ATC:\\R".. f9f36.."\\n"
-	prttags = prttags.."TVR:\\R".. f9500.."\\n"
-	prttags = prttags.."TSI:\\R".. f9b00.."\\n"
-	prttags = prttags.."TD:\\R".. f9a00.."\\n"
-	prttags = prttags.."TT:\\R".. f9c00.."\\n"
-	prttags = prttags.."Amount:\\R".. string.format("$%.2f",i9f02/100).."\\n"
-	prttags = prttags.."TCuC:\\R".. f5f2a.."\\n"
-	prttags = prttags.."AIP:\\R".. f8200.."\\n"
-	prttags = prttags.."PAN:\\R".. pan.."\\n"
-	prttags = prttags.."TCC:\\R".. f9f1a.."\\n"
-	prttags = prttags.."CVMR:\\R".. f9f34.."\\n"
-	prttags = prttags.."OthAmt:\\R".. string.format("$%.2f",i9f03/100).."\\n"
-	prttags = prttags.."PANSeq:\\R".. f5f34.."\\n"
-	prttags = prttags.."FloorLmt:\\R".. (f9f1b or " ").."\\n"
-	prttags = prttags.."    Issuer     Terminal\\n"
-	prttags = prttags.."Dn "..iac_denial.." "..(tac_denial or "").."\\n"
-	prttags = prttags.."On "..iac_online.." "..(tac_online or "").."\\n"
-	prttags = prttags.."Df "..iac_default.." "..(tac_default or "").."\\n"
+	 ..(f9f27=="80" and "ARQC" or f9f27=="40" and "TC" or "AAC") ..":\\R".. f9f26.."\\n"
+	 .."CID:\\R".. f9f27.."\\n"
+	 .."IAD:\\R".. f9f10.."\\n"
+	 .."UN:\\R".. f9f37.."\\n"
+	 .."ATC:\\R".. f9f36.."\\n"
+	 .."TVR:\\R".. f9500.."\\n"
+	 .."TSI:\\R".. f9b00.."\\n"
+	 .."TD:\\R".. f9a00.."\\n"
+	 .."TT:\\R".. f9c00.."\\n"
+	 .."Amount:\\R".. string.format("$%.2f",i9f02/100).."\\n"
+	 .."TCuC:\\R".. f5f2a.."\\n"
+	 .."AIP:\\R".. f8200.."\\n"
+	 .."PAN:\\R".. pan.."\\n"
+	 .."TCC:\\R".. f9f1a.."\\n"
+	 .."CVMR:\\R".. f9f34.."\\n"
+	 .."OthAmt:\\R".. string.format("$%.2f",i9f03/100).."\\n"
+	 .."PANSeq:\\R".. f5f34.."\\n"
+	 .."FloorLmt:\\R".. (f9f1b or " ").."\\n"
+	 .."    Issuer     Terminal\\n"
+	 .."Dn "..(iac_denial==""  and "          " or iac_denial).." ".. (tac_denial or "") .."\\n"
+	 .."On "..(iac_online==""  and "          " or iac_online).." ".. (tac_online or "").."\\n"
+	 .."Df "..(iac_default=="" and "          " or iac_default).." "..(tac_default or "").."\\n"
 	return(prttags)
 end
 

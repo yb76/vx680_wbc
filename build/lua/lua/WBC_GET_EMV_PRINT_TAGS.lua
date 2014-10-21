@@ -28,7 +28,6 @@ function get_emv_print_tags(tagprint)
 			f5f34 = get_value_from_tlvs("5F34")
 			f9f33 = get_value_from_tlvs("9F33")
 			f9b00 = get_value_from_tlvs("9B00")
-
 			tac_default,tac_denial,tac_online= terminal.CTLSEmvGetTac(f4f)
 
 			iac_default = get_value_from_tlvs("9F0D")
@@ -46,27 +45,27 @@ function get_emv_print_tags(tagprint)
 	local pan = f5a00 and string.match(f5a00,"%d+") or ""
 	pan = pan and #pan>0 and (string.rep("*",#pan - 4 ) .. string.sub(pan,-4)) or ""
 	prttags = prttags.."AID:\\R"..f4f.."\\n".." \\R"..terminal.StringToHex(f50,#f50).."\\n"
-	prttags = prttags..(f9f27=="80" and "ARQC" or f9f27=="40" and "TC" or "AAC") ..":\\R".. f9f26.."\\n"
-	prttags = prttags.."CID:\\R".. f9f27.."\\n"
-	prttags = prttags.."IAD:\\R".. f9f10.."\\n"
-	prttags = prttags.."UN:\\R".. f9f37.."\\n"
-	prttags = prttags.."ATC:\\R".. f9f36.."\\n"
-	prttags = prttags.."TVR:\\R".. f9500.."\\n"
-	prttags = prttags.."TSI:\\R".. f9b00.."\\n"
-	prttags = prttags.."TD:\\R".. f9a00.."\\n"
-	prttags = prttags.."TT:\\R".. f9c00.."\\n"
-	prttags = prttags.."Amount:\\R".. string.format("$%.2f",i9f02/100).."\\n"
-	prttags = prttags.."TCuC:\\R".. f5f2a.."\\n"
-	prttags = prttags.."AIP:\\R".. f8200.."\\n"
-	prttags = prttags.."PAN:\\R".. pan.."\\n"
-	prttags = prttags.."TCC:\\R".. f9f1a.."\\n"
-	prttags = prttags.."CVMR:\\R".. f9f34.."\\n"
-	prttags = prttags.."OthAmt:\\R".. string.format("$%.2f",i9f03/100).."\\n"
-	prttags = prttags.."PANSeq:\\R".. f5f34.."\\n"
-	prttags = prttags.."FloorLmt:\\R".. (f9f1b or " ").."\\n"
-	prttags = prttags.."    Issuer     Terminal\\n"
-	prttags = prttags.."Dn "..iac_denial.." "..(tac_denial or "").."\\n"
-	prttags = prttags.."On "..iac_online.." "..(tac_online or "").."\\n"
-	prttags = prttags.."Df "..iac_default.." "..(tac_default or "").."\\n"
+	 ..(f9f27=="80" and "ARQC" or f9f27=="40" and "TC" or "AAC") ..":\\R".. f9f26.."\\n"
+	 .."CID:\\R".. f9f27.."\\n"
+	 .."IAD:\\R".. f9f10.."\\n"
+	 .."UN:\\R".. f9f37.."\\n"
+	 .."ATC:\\R".. f9f36.."\\n"
+	 .."TVR:\\R".. f9500.."\\n"
+	 .."TSI:\\R".. f9b00.."\\n"
+	 .."TD:\\R".. f9a00.."\\n"
+	 .."TT:\\R".. f9c00.."\\n"
+	 .."Amount:\\R".. string.format("$%.2f",i9f02/100).."\\n"
+	 .."TCuC:\\R".. f5f2a.."\\n"
+	 .."AIP:\\R".. f8200.."\\n"
+	 .."PAN:\\R".. pan.."\\n"
+	 .."TCC:\\R".. f9f1a.."\\n"
+	 .."CVMR:\\R".. f9f34.."\\n"
+	 .."OthAmt:\\R".. string.format("$%.2f",i9f03/100).."\\n"
+	 .."PANSeq:\\R".. f5f34.."\\n"
+	 .."FloorLmt:\\R".. (f9f1b or " ").."\\n"
+	 .."    Issuer     Terminal\\n"
+	 .."Dn "..(iac_denial==""  and "          " or iac_denial).." ".. (tac_denial or "") .."\\n"
+	 .."On "..(iac_online==""  and "          " or iac_online).." ".. (tac_online or "").."\\n"
+	 .."Df "..(iac_default=="" and "          " or iac_default).." "..(tac_default or "").."\\n"
 	return(prttags)
 end

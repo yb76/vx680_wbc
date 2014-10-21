@@ -346,7 +346,6 @@ function ctls_tran()
     local translimit,cvmlimit=0,0
     local nosaf = 0 --toomany_saf() and 1 or 0
     local tr1,tr2,tlvs,emvres = terminal.CtlsCall(0,amt,nosaf)
-	terminal.DebugDisp("boyang emvres "..emvres)
 
     if tr2 ~= "" then
         if taxicfg.ctls_slimit > 0 and amt > taxicfg.ctls_slimit then tr2 = ""; emvres = "-1025"; end

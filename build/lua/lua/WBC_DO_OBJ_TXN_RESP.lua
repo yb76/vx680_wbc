@@ -19,7 +19,6 @@ function do_obj_txn_resp()
     errmsg,fld12,fld13,fld15,fld37,fld38,fld39,fld44,fld47,fld48,fld55,fld64 = terminal.As2805Break( rcvmsg, msg_t )
     if fld12 and fld13 then txn.time = fld13..fld12 end
     if fld38 and #fld38>0 then txn.authid = fld38 end
---terminal.DebugDisp("fld39="..fld39)
     if fld39 and #fld39>0 then txn.rc = fld39 end
     if fld44 and #fld44>0 then txn.rc_desc = fld44 end
 	if fld47 and #fld47>0 then hosttag_process(fld47) end
