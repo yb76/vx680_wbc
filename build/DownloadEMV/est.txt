@@ -142,9 +142,9 @@ data EST
 247,                            /* "CAPK Index 9" */
 "A000000004.F7",                /* "CAPK File 9" */
 "311240",                       /* "CAPK Expiry Date 9" */
-256,                            /* PublicKeyIndex10 */
-"",                             /* CAPKFile10 */
-"",                             /* CAPKExpDate10 */
+250,                            /* PublicKeyIndex10 */
+"A000000004.FA",                /* CAPKFile10 */
+"311240",                       /* CAPKExpDate10 */
 256,                            /* PublicKeyIndex11 */
 "",                             /* CAPKFile11 */
 "",                             /* CAPKExpDate11 */
@@ -521,7 +521,7 @@ data EST
 "",                             /* TermAVN10 */
 "",                             /* SecondTermAVN10 */
 "",                             /* Recommended App name */
-4,                              /* EMVTableRecord */
+5,                              /* EMVTableRecord */
 "A000000384.CSN")
 
 }
