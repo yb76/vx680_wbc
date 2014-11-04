@@ -63,14 +63,14 @@ function prepare_txn_req()
 	
 	if txn.moto then wcv = "1"
 	elseif cvmr then
-		local cvmr1,cvm3 = string.sub(cvmr,2,2),string.sub(cvmr,5,6)
-		if cvm3=="02" and (cvmr1 == "1" or cvmr1 == "3" or cvmr1 == "4" or cvmr1 == "5") then
+		local cvmr1,cvmr3 = string.sub(cvmr,2,2),string.sub(cvmr,5,6)
+		if cvmr3=="02" and (cvmr1 == "1" or cvmr1 == "3" or cvmr1 == "4" or cvmr1 == "5") then
 			txn.offlinepin = true ; wcv = "3"
-		elseif cvm3=="02" and (cvmr1 == "F") then
+		elseif cvmr3=="02" and (cvmr1 == "F") then
 			wcv = "6"
-		elseif cvm3=="02" and (cvmr1 == "E") then
+		elseif cvmr3=="02" and (cvmr1 == "E") then
 			wcv = "1"
-		elseif cvm1=="2" and txn.pinblock and #txn.pinblock > 0 then wcv = "2"
+		elseif cvmr1=="2" and txn.pinblock and #txn.pinblock > 0 then wcv = "2"
 		end
 	elseif txn.pinblock and #txn.pinblock > 0 then wcv = "2"
 	end

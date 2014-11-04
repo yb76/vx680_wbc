@@ -73,8 +73,8 @@ data EST
 "VISA Interlink",               /* Recommended App name */
 "A0000000038010",               /* SupportedAID4 */
 1,                              /* PartialNameAllowedFlag4 */
-"008C",                         /* TermAVN4 */
-"0084",                         /* SecondTermAVN4 */
+"0084",                         /* TermAVN4 */
+"008C",                         /* SecondTermAVN4 */
 "Visa Plus",                    /* Recommended App name */
 "",                             /* SupportedAID5 */
 1,                              /* PartialNameAllowedFlag5 */

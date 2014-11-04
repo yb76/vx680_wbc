@@ -61,8 +61,16 @@ function do_obj_idle()
 		callback.timeout_idx = 1
 		return callback.timeout_func[1]() 
 	elseif batt>= battlimit and ticknow and now - ticknow > 60000 then
-	  --PowerSaveMode
-	  terminal.PowerSaveMode(0,1,1200000,600000,18000000)
+	  if not config.logok then
+	    check_logon_ok()
+		if not config.logok then 
+		  config.logretry = (config.logretry or 0) + 1
+		  if config.logretry >= 2 then terminal.DisplayObject("WIDELBL,THIS,RESTARTING TERMINAL,3,C;",0,EVT.TIMEOUT,1000); terminal.Reboot() end
+		else config.logretry = 0 end
+	  else
+	    --PowerSaveMode
+	    terminal.PowerSaveMode(0,1,1200000,600000,18000000)
+	  end
 	  ticknow = terminal.SysTicks()
 	  return do_obj_idle()
     else
