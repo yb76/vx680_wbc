@@ -60,6 +60,7 @@ function prepare_txn_req()
     fld47 = fld47 .. "TCC" ..tcc.."\\"
 	local wcv = "1"
 	local cvmr = (txn.ctls == "CTLS_E" and get_value_from_tlvs("9F34")) or not txn.earlyemv and not txn.emv.fallback and not txn.ctls and terminal.EmvGetTagData(0x9f34)
+	terminal.DebugDisp("boyang....cvmr= "..(cvmr or "empty"))
 	
 	if txn.moto then wcv = "1"
 	elseif cvmr then
@@ -71,10 +72,13 @@ function prepare_txn_req()
 		elseif cvmr3=="02" and (cvmr1 == "E") then
 			wcv = "1"
 		elseif cvmr1=="2" and txn.pinblock and #txn.pinblock > 0 then wcv = "2"
+		else wcv = "6"
 		end
 	elseif txn.pinblock and #txn.pinblock > 0 then wcv = "2"
+	else wcv = "6"
 	end
 
+	terminal.DebugDisp("boyang....wcv= "..(wcv or "empty"))
 	fld47 = fld47 .."WCV"..wcv.."\\"
     if txn.chipcard and txn.emv.fallback and posentry == "801" then fld47 = fld47 .."FCR\\" end
     table.insert(msg_flds,"47:" ..terminal.HexToString(fld47))

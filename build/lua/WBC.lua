@@ -712,6 +712,7 @@ function prepare_txn_req()
     fld47 = fld47 .. "TCC" ..tcc.."\\"
 	local wcv = "1"
 	local cvmr = (txn.ctls == "CTLS_E" and get_value_from_tlvs("9F34")) or not txn.earlyemv and not txn.emv.fallback and not txn.ctls and terminal.EmvGetTagData(0x9f34)
+	terminal.DebugDisp("boyang....cvmr= "..(cvmr or "empty"))
 	
 	if txn.moto then wcv = "1"
 	elseif cvmr then
@@ -723,10 +724,13 @@ function prepare_txn_req()
 		elseif cvmr3=="02" and (cvmr1 == "E") then
 			wcv = "1"
 		elseif cvmr1=="2" and txn.pinblock and #txn.pinblock > 0 then wcv = "2"
+		else wcv = "6"
 		end
 	elseif txn.pinblock and #txn.pinblock > 0 then wcv = "2"
+	else wcv = "6"
 	end
 
+	terminal.DebugDisp("boyang....wcv= "..(wcv or "empty"))
 	fld47 = fld47 .."WCV"..wcv.."\\"
     if txn.chipcard and txn.emv.fallback and posentry == "801" then fld47 = fld47 .."FCR\\" end
     table.insert(msg_flds,"47:" ..terminal.HexToString(fld47))
@@ -1424,6 +1428,7 @@ end
 function tcpsend(msg)
   local tcperrmsg = ""
   local mti = ( msg and #msg > 4 and string.sub(msg,1,4) or "")
+  if config.no_online then config.no_online = nil; return "TESTING" end --TESTING
   if config.msgenc == "2" and ( mti == "0100" or mti=="0200" or mti == "0220" or mti == "0400") then
 	msg = mti .. msg_enc( "E", string.sub(msg,5))
   end
@@ -1436,7 +1441,6 @@ end
 function tcprecv()
   local rcvmsg,tcperrmsg ="",""
   tcperrmsg,rcvmsg = terminal.TcpRecv("2000",config.tcptimeout)
-  
   if tcperrmsg == "NOERROR" and #rcvmsg > 4 and config.msgenc == "2" then
     local mti = string.sub(rcvmsg,1,4)
     if mti == "0110" or mti=="0210" or mti == "0230" or mti == "0410" then
@@ -1905,6 +1909,9 @@ function funckeymenu()
 	  return do_obj_txn_finish()
     elseif scrinput == "00200200" then
 	  return do_obj_txn_reset_memory()
+    elseif scrinput == "987654" then
+	  config.no_online = true
+	  return do_obj_txn_finish()
     else return do_obj_check_pswd(scrinput)
     end
   end
