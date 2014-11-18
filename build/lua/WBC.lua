@@ -712,7 +712,6 @@ function prepare_txn_req()
     fld47 = fld47 .. "TCC" ..tcc.."\\"
 	local wcv = "1"
 	local cvmr = (txn.ctls == "CTLS_E" and get_value_from_tlvs("9F34")) or not txn.earlyemv and not txn.emv.fallback and not txn.ctls and terminal.EmvGetTagData(0x9f34)
-	terminal.DebugDisp("boyang....cvmr= "..(cvmr or "empty"))
 	
 	if txn.moto then wcv = "1"
 	elseif cvmr then
@@ -730,7 +729,6 @@ function prepare_txn_req()
 	else wcv = "6"
 	end
 
-	terminal.DebugDisp("boyang....wcv= "..(wcv or "empty"))
 	fld47 = fld47 .."WCV"..wcv.."\\"
     if txn.chipcard and txn.emv.fallback and posentry == "801" then fld47 = fld47 .."FCR\\" end
     table.insert(msg_flds,"47:" ..terminal.HexToString(fld47))
@@ -1403,7 +1401,6 @@ function do_obj_emv_error(emvstat)
 end
 
 function tcpconnect()
-  if config.nextonline_fail then config.nextonline_fail = nil; return "TESTING" end -- TESTING
   if not config.tcptimeout then config.tcptimeout = 30 end
   local tcperrmsg = terminal.TcpConnect( "6",config.apn,"B1","0","",config.hip,config.port,config.tcptimeout,"4096","10000") -- "6" CLNP
   return(tcperrmsg)
@@ -1432,7 +1429,6 @@ function tcpsend(msg)
   if config.msgenc == "2" and ( mti == "0100" or mti=="0200" or mti == "0220" or mti == "0400") then
 	msg = mti .. msg_enc( "E", string.sub(msg,5))
   end
-  --if mti == "0200" then debugPrint(msg) end -- TESTING
   tcperrmsg = terminal.TcpSend(msg)
   txn.tcpsent = true
   return(tcperrmsg)
@@ -2127,14 +2123,16 @@ end
 
 function debugPrint(msg)
 	local maxlen = #msg
-	local idx = 0
+	local idx = 1
+	if not maxlen or maxlen ==0 then return end
 	while true do
-		terminal.Print("\\4"..string.sub(msg, idx, idx+199).."\\n", false)
-		idx = idx + 200
+		terminal.Print("\\4"..string.sub(msg, idx, idx+125).."\\n", false)
+		idx = idx + 126
 		if idx > maxlen then break end
 	end
 	terminal.Print("\\n", true)
 end
+
 
 callback.func_func = funckeymenu
 if not callback.chip_func then callback.chip_func = do_obj_wbc_mcr_chip end
