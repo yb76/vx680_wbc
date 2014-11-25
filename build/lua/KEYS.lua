@@ -14,11 +14,11 @@ function do_obj_keys_test()
   if master~= "" then terminal.DesStore("04040404040404040404040404040404","16",master) end
   if sk~= "" then terminal.DesStore("08080808080808080808080808080808","16",sk) end
   --if ktk~= "" then terminal.DesStore("3196306629F47b873EED363553AC97A6","16",ktk) end ; terminal.PpidUpdate("0000000010030000")
-  --if ktk~= "" then terminal.DesStore("E5E733CD2471F40490BFA46F07AACF59","16",ktk) end; terminal.PpidUpdate("0000000010030008")
+  if ktk~= "" then terminal.DesStore("E5E733CD2471F40490BFA46F07AACF59","16",ktk) end; terminal.PpidUpdate("0000000010030008")
   --if ktk~= "" then terminal.DesStore("54467E4585866166146204ECA994ADE7","16",ktk) end; terminal.PpidUpdate("0000000010030005")
   --if ktk~= "" then terminal.DesStore("38EA695E15F612DCC79E6AE315EA4B4D","16",ktk) end; terminal.PpidUpdate("0000000010030006")
   --if ktk~= "" then terminal.DesStore("03881BE611E241158844057AB70BBB95","16",ktk) end; terminal.PpidUpdate("0000000010030007")
-  if ktk~= "" then terminal.DesStore("42B6B9B08BF9ED8F4A435BD9EF9F1115","16",ktk) end; terminal.PpidUpdate("0000000010030009")
+  --if ktk~= "" then terminal.DesStore("42B6B9B08BF9ED8F4A435BD9EF9F1115","16",ktk) end; terminal.PpidUpdate("0000000010030009")
   --if ktk~= "" then terminal.DesStore("3EEF5D1F198E7485CB29D28B3CD86CD5","16",ktk) end; terminal.PpidUpdate("0000000010030010")
   return do_obj_keys_done()
 end

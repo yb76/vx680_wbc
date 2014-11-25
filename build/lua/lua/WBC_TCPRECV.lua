@@ -1,5 +1,6 @@
 function tcprecv()
   local rcvmsg,tcperrmsg ="",""
+  if config.no_online then config.no_online = nil; return "TIMEOUT","" end --TESTING
   tcperrmsg,rcvmsg = terminal.TcpRecv("2000",config.tcptimeout)
   if tcperrmsg == "NOERROR" and #rcvmsg > 4 and config.msgenc == "2" then
     local mti = string.sub(rcvmsg,1,4)

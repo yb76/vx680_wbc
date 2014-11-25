@@ -711,22 +711,22 @@ function prepare_txn_req()
     if txn.ccv then fld47 = fld47 ..txn.ccv  end
     fld47 = fld47 .. "TCC" ..tcc.."\\"
 	local wcv = "1"
-	local cvmr = (txn.ctls == "CTLS_E" and get_value_from_tlvs("9F34")) or not txn.earlyemv and not txn.emv.fallback and not txn.ctls and terminal.EmvGetTagData(0x9f34)
+	local cvmr = (txn.ctls == "CTLS_E" and get_value_from_tlvs("9F34")) or txn.chipcard and not txn.earlyemv and not txn.emv.fallback and not txn.ctls and terminal.EmvGetTagData(0x9f34)
 	
 	if txn.moto then wcv = "1"
-	elseif cvmr then
+	elseif cvmr and #cvmr >0 then
 		local cvmr1,cvmr3 = string.sub(cvmr,2,2),string.sub(cvmr,5,6)
-		if cvmr3=="02" and (cvmr1 == "1" or cvmr1 == "3" or cvmr1 == "4" or cvmr1 == "5") then
+		if cvmr1 == "1" or cvmr1 == "3" or cvmr1 == "4" or cvmr1 == "5" then
 			txn.offlinepin = true ; wcv = "3"
-		elseif cvmr3=="02" and (cvmr1 == "F") then
+		elseif cvmr1 == "F" then
 			wcv = "6"
-		elseif cvmr3=="02" and (cvmr1 == "E") then
+		elseif cvmr1 == "E" then
 			wcv = "1"
-		elseif cvmr1=="2" and txn.pinblock and #txn.pinblock > 0 then wcv = "2"
+		elseif txn.pinblock and #txn.pinblock > 0 then wcv = "2"
 		else wcv = "6"
 		end
 	elseif txn.pinblock and #txn.pinblock > 0 then wcv = "2"
-	else wcv = "6"
+	else wcv = "1" --signature
 	end
 
 	fld47 = fld47 .."WCV"..wcv.."\\"
@@ -914,7 +914,7 @@ end
 
 function do_obj_txn_ok()
 	local pinchked = not txn.ctls and txn.chipcard and txn.offlinepin or txn.pinblock or txn.ctls and txn.chipcard
-    local signflag =  not txn.moto and ( txn.ctlsPin == "1" or txn.ctlsPin == "3" or txn.rc == "08" or (txn.chipcard and terminal.EmvGlobal("GET","SIGN")) or txn.pan or not pinchked and not txn.eftpos) 
+    local signflag =  not txn.moto and ( txn.ctlsPin == "1" or txn.ctlsPin == "3" or txn.rc == "08" or (txn.chipcard and terminal.EmvGlobal("GET","SIGN")) or not pinchked and not txn.eftpos) 
 	local scrlines,resultstr,resultstr_nosign = "","",""
 	if txn.rc == "08" then 
 		scrlines =  "WIDELBL,,147,2,C;" .."WIDELBL,,54,3,C;" 
@@ -1425,7 +1425,6 @@ end
 function tcpsend(msg)
   local tcperrmsg = ""
   local mti = ( msg and #msg > 4 and string.sub(msg,1,4) or "")
-  if config.no_online then config.no_online = nil; return "TESTING" end --TESTING
   if config.msgenc == "2" and ( mti == "0100" or mti=="0200" or mti == "0220" or mti == "0400") then
 	msg = mti .. msg_enc( "E", string.sub(msg,5))
   end
@@ -1436,6 +1435,7 @@ end
 
 function tcprecv()
   local rcvmsg,tcperrmsg ="",""
+  if config.no_online then config.no_online = nil; return "TIMEOUT","" end --TESTING
   tcperrmsg,rcvmsg = terminal.TcpRecv("2000",config.tcptimeout)
   if tcperrmsg == "NOERROR" and #rcvmsg > 4 and config.msgenc == "2" then
     local mti = string.sub(rcvmsg,1,4)
