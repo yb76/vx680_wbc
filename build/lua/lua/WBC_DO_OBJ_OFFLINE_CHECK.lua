@@ -1,5 +1,6 @@
 function do_obj_offline_check(revrequired)
 	local FAILED_TO_CONNECT = 3
+	terminal.DebugDisp("failed to connect")
 	local ret = config.no_offline and -1 or terminal.EmvUseHostData(FAILED_TO_CONNECT,"")
 	if ret == 0 then 
 		txn.rc = "Y3"
@@ -32,7 +33,6 @@ function do_obj_offline_check(revrequired)
 		return do_obj_txn_ok()
 	else
 		txn.rc = "Z3"
-		--terminal.EmvSetTagData(0x8A00,txn.rc)
 		return do_obj_txn_nok(txn.rc)
 	end
 end
