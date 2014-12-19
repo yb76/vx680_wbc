@@ -344,7 +344,7 @@ end
 function ctls_tran()
     local amt = taxi.subtotal+taxi.serv_gst
     local translimit,cvmlimit=0,0
-    local nosaf = 0 --toomany_saf() and 1 or 0
+    local nosaf = 0
     local tr1,tr2,tlvs,emvres = terminal.CtlsCall(0,amt,nosaf)
 
     if tr2 ~= "" then

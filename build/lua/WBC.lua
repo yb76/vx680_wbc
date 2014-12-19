@@ -416,7 +416,6 @@ end
 
 function do_obj_offline_check(revrequired)
 	local FAILED_TO_CONNECT = 3
-	terminal.DebugDisp("failed to connect")
 	local ret = config.no_offline and -1 or terminal.EmvUseHostData(FAILED_TO_CONNECT,"")
 	if ret == 0 then 
 		txn.rc = "Y3"
@@ -766,7 +765,7 @@ function prepare_txn_req()
 			local EMV9f10 = "9F10"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9F33")
 			local EMV9f33 = "9F33"..string.format("%02X",#tagvalue/2) .. tagvalue
-			if tagvalue == "" then EMV9f33 = "9F3303E068C8" end
+			if tagvalue == "" then EMV9f33 = "9F33030068C8" end
 			tagvalue = get_value_from_tlvs("9F1A")
 			local EMV9f1a = "9F1A"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9500")
@@ -879,7 +878,6 @@ function do_obj_txn_resp()
 		end
     elseif fld39 ~= "00" and fld39 ~= "08" then 
       local HOST_DECLINED = 2
-      terminal.DebugDisp("host declined="..fld39)
 	  if not txn.ctls and txn.chipcard and not txn.emv.fallback and not txn.earlyemv and fld39~="91" then 
 			  terminal.EmvUseHostData(HOST_DECLINED,fld55) end
       return do_obj_txn_nok(errmsg)
@@ -1707,8 +1705,8 @@ function get_ipay_print_nok(who,result_str)
   elseif txn.chipcard and not txn.emv.fallback and not txn.earlyemv then
 	local pds4f,pds50,pds9f26,pds9f12 
 	if txn.ctls then
-		pds4f,pds50,pds9f26,pds9f12 = get_value_from_tlvs("9F06"),get_value_from_tlvs("5000"),get_value_from_tlvs("9F26"),get_value_from_tlvs("9F12")
-		if pds4f == "" then pds4f = get_value_from_tlvs("8400") end
+		pds4f,pds50,pds9f26,pds9f12 = get_value_from_tlvs("8400"),get_value_from_tlvs("5000"),get_value_from_tlvs("9F26"),get_value_from_tlvs("9F12")
+		if pds4f == "" then pds4f = get_value_from_tlvs("9F06") end
 	else
 		pds4f,pds50,pds9f26,pds9f12 = terminal.EmvGetTagData(0x4F00,0x5000,0x9F26,0x9F12)
 	end
@@ -1788,8 +1786,8 @@ function get_ipay_print(who,result_ok,result_str)
 	if txn.chipcard and not txn.emv.fallback and not txn.earlyemv then
 		local pds4f,pds50,pds9f26,pds9f27,pds9f12 
 		if txn.ctls then
-		  pds4f,pds50,pds9f26,pds9f27,pds9f12 = get_value_from_tlvs("9F06"),get_value_from_tlvs("5000"),get_value_from_tlvs("9F26"),get_value_from_tlvs("9F27"),get_value_from_tlvs("9F12")
-		  if pds4f == "" then pds4f = get_value_from_tlvs("8400") end
+		  pds4f,pds50,pds9f26,pds9f27,pds9f12 = get_value_from_tlvs("8400"),get_value_from_tlvs("5000"),get_value_from_tlvs("9F26"),get_value_from_tlvs("9F27"),get_value_from_tlvs("9F12")
+		  if pds4f == "" then pds4f = get_value_from_tlvs("9F06") end
 		else
 		  pds4f,pds50,pds9f26,pds9f27,pds9f12 = terminal.EmvGetTagData(0x4F00,0x5000,0x9F26,0x9F27,0x9F12)
 		end
