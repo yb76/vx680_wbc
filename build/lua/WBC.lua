@@ -261,7 +261,7 @@ function get_cardinfo()
 			local tag9f6c_1 = #EMV9F6C>0 and tonumber(string.sub( EMV9F6C,1,2),16) or 0
 			local tag9f6c_2 = #EMV9F6C>0 and tonumber(string.sub( EMV9F6C,3,4),16) or 0
 			local pinflag = hasbit(tag9f6c_1,bit(8)) 
-			local signflag = hasbit(tag9f6c_1,bit(7)) or (txn.totalamt >= txn.cvmlimit and EMV9F6C =="")
+			local signflag = hasbit(tag9f6c_1,bit(7))
 			if pinflag or signflag then
 				if pinflag and config.no_pin then
 					txn.rc = "W31"
@@ -914,7 +914,7 @@ function do_obj_txn_resp()
 end
 
 function do_obj_txn_ok()
-	local pinchked = not txn.ctls and txn.chipcard and txn.offlinepin or txn.pinblock or txn.ctls and txn.chipcard
+	local pinchked = not txn.ctls and txn.chipcard and txn.offlinepin or txn.pinblock or txn.ctls
     local signflag =  not txn.moto and ( txn.ctlsPin == "1" or txn.ctlsPin == "3" or txn.rc == "08" or (txn.chipcard and terminal.EmvGlobal("GET","SIGN")) or not pinchked and not txn.eftpos) 
 	local scrlines,resultstr,resultstr_nosign = "","",""
 	if txn.rc == "08" then 

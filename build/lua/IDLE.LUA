@@ -160,7 +160,7 @@ function init_config()
   config.servicename = ( config.servicename ~= "" and config.servicename or "EFTPOS FROM ST GEORGE" )
   config.merch_loc0 = (config.merch_loc0 ~="" and config.merch_loc0 or "GM CABS AUSTRALIA ")
   config.merch_loc1 = (config.merch_loc1 ~="" and config.merch_loc1 or "MASCOT        NSW AU")
-  config.logok = false
+  config.logok = true
 
   local manualentry = terminal.GetJsonValue("CONFIG","MANUALENTRY")
   if manualentry == "YES" then config.manualentry = true else config.manualentry = false end

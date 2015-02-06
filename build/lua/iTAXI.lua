@@ -350,12 +350,6 @@ function ctls_tran()
     if tr2 ~= "" then
         if taxicfg.ctls_slimit > 0 and amt > taxicfg.ctls_slimit then tr2 = ""; emvres = "-1025"; end
     elseif tlvs ~= "" then
-		-- limit check is done in f700 ctlsemvcfg.txt
-        --local aid = get_value_from_tlvs("9F06",tlvs)
-		--if string.sub(tag_aid,1,10) == "A000000384" and config.ehub == "YES" then
-        --translimit,cvmlimit =terminal.CTLSEmvGetLimit(aid) --boyang
-        --if string.sub(aid,1,10)=="A000000003" and amt >= translimit or amt > translimit then tlvs = ""; emvres = "-1025" end --TESTING --boyang
-       taxi.cvmlimit = cvmlimit
     end
 
     local safexceed = (nosaf ==1 and tonumber(emvres) == 0)
@@ -380,7 +374,9 @@ function ctls_tran()
         taxi.tlvs = tlvs
         taxi.chipcard = true 
         return do_obj_itaxi_pay_swipe()        
-    elseif emvres == "99" or emvres == "10" or emvres =="-1025" then 
+    elseif emvres == "98" then
+        return itaxi_ctls_tran()
+    elseif emvres == "99" or emvres =="-1025" then 
         if emvres == "-1025" then terminal.DisplayObject("WIDELBL,THIS,NO CONTACTLESS,3,C;".. 
           "WIDELBL,THIS,FOR AMOUNT >".. string.format("%.2f",translimit/100.0) ..",5,C;",KEY.OK,EVT.TIMEOUT,2000) end
         return do_obj_itaxi_paymentmethod()
@@ -400,9 +396,9 @@ function ctls_tran()
         terminal.ErrorBeep()
         if emvres == "-13" then
             if terminal.EmvIsCardPresent() then terminal.DisplayObject("WIDELBL,THIS,REMOVE CARD,3,C;",0,EVT.SCT_OUT,0)
-            else    terminal.DisplayObject("WIDELBL,THIS,TRAN CANCELLED,3,C;",0,EVT.TIMEOUT,500)
+            else    terminal.DisplayObject("WIDELBL,THIS,TRAN CANCELLED,3,C;",0,EVT.TIMEOUT,2000)
             end
-        else    terminal.DisplayObject("WIDELBL,THIS,CARD ERROR,3,C;",0,EVT.TIMEOUT,500)
+        else    terminal.DisplayObject("WIDELBL,THIS,CARD ERROR,3,C;",0,EVT.TIMEOUT,2000)
         end
         return do_obj_itaxi_finish()
     end
@@ -588,7 +584,8 @@ function do_obj_itaxi_serv_gst ()
   local screvent,scrinput = terminal.DisplayObject(scrlines,scrkeys,EVT.TIMEOUT,ScrnTimeout)
   if screvent == "KEY_OK" and taxicfg.serv_gst ~= tonumber(scrinput) then
     taxicfg.serv_gst = tonumber(scrinput) or 0
-    terminal.SetJsonValue("iTAXI_CFG","SERV_GST",scrinput)
+    if taxicfg.hire then taxicfg.h_serv_gst=taxicfg.serv_gst; terminal.SetJsonValue("iTAXI_CFG","HIRE_SERV_GST",scrinput)
+	else terminal.SetJsonValue("iTAXI_CFG","SERV_GST",scrinput) end
   end
   return do_obj_itaxi_smenu()
 end
@@ -597,9 +594,10 @@ function do_obj_itaxi_commission ()
   local scrlines = "LARGE,iTAXI_T,9,2,C;" .."LPERCENT,"..taxicfg.comm..",0,5,20,6;"
   local scrkeys  = KEY.CLR+KEY.CNCL+KEY.OK
   local screvent,scrinput = terminal.DisplayObject(scrlines,scrkeys,EVT.TIMEOUT,ScrnTimeout)
-  if screvent == "KEY_OK" then
+  if screvent == "KEY_OK" and taxicfg.comm ~= tonumber(scrinput) then
     taxicfg.comm = tonumber(scrinput)
-    terminal.SetJsonValue("iTAXI_CFG","COMM",scrinput)
+    if taxicfg.hire then taxicfg.h_comm=taxicfg.comm; terminal.SetJsonValue("iTAXI_CFG","HIRE_COMM",scrinput)
+    else terminal.SetJsonValue("iTAXI_CFG","COMM",scrinput) end
   end
   return do_obj_itaxi_smenu()
 end

@@ -161,15 +161,15 @@ data MVT
  -1,                   /* "Scheme Reference" */
  -1,                   /* "Issuer Reference" */
   1,                   /* "TRM Data Present" */
-  0,                   /* "Floor Limit"      */
+  10000,               /* "Floor Limit"      */
   0,                   /* "RS Threshold"     */
-  10,                   /* "Target RS %"      */
-  25,                   /* "Max Target RS %"  */
+  0,                   /* "Target RS %"      */
+  0,                   /* "Max Target RS %"  */
   1,                   /* MerchantForcedOnline */
   0,                   /* BlackListedCardSpprt */
-  "CC00000000",        /* "TAC Default FC6024A800"*/
+  "0000000000",        /* "TAC Default FC6024A800"*/
   "0000000000",        /* "TAC Denial"      */
-  "CC00008000",        /* "TAC Online"      */
+  "0000000000",        /* "TAC Online"      */
   "",                  /* "Default TDOL"    */
   "9F3704",            /* "Default DDOL"    */
   0,                   /* "FallbackAllowed "  */
