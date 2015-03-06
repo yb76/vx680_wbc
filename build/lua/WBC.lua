@@ -765,7 +765,7 @@ function prepare_txn_req()
 			local EMV9f10 = "9F10"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9F33")
 			local EMV9f33 = "9F33"..string.format("%02X",#tagvalue/2) .. tagvalue
-			if tagvalue == "" then EMV9f33 = "9F33030068C8" end
+			if tagvalue == "" then EMV9f33 = "9F3303E068C8" end
 			tagvalue = get_value_from_tlvs("9F1A")
 			local EMV9f1a = "9F1A"..string.format("%02X",#tagvalue/2)  .. tagvalue
 			tagvalue = get_value_from_tlvs("9500")

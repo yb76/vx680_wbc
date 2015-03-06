@@ -374,8 +374,6 @@ function ctls_tran()
         taxi.tlvs = tlvs
         taxi.chipcard = true 
         return do_obj_itaxi_pay_swipe()        
-    elseif emvres == "98" then
-        return itaxi_ctls_tran()
     elseif emvres == "99" or emvres =="-1025" then 
         if emvres == "-1025" then terminal.DisplayObject("WIDELBL,THIS,NO CONTACTLESS,3,C;".. 
           "WIDELBL,THIS,FOR AMOUNT >".. string.format("%.2f",translimit/100.0) ..",5,C;",KEY.OK,EVT.TIMEOUT,2000) end
