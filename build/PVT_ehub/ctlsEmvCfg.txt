@@ -65,8 +65,5 @@ R;0307-0000;
 #get all configurable aids
 R;0305-0000;
 
-#delete paypass TESTING
-R;0404-0000;9f06-07-a0000000041010;
-
 #get lcd message
 R;0104-0000;ff;

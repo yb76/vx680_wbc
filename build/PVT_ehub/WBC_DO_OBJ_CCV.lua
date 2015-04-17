@@ -1,5 +1,5 @@
 function do_obj_ccv()
-  local scrlines = "WIDELBL,,112,2,C;" .. "LNUMBER,,0,5,17,5,1;"
+  local scrlines = "WIDELBL,,112,2,C;" .. "LNUMBER,,0,5,17,5,0;"
   local scrkeys  = KEY.OK+KEY.CLR+KEY.CNCL
   local screvents = EVT.TIMEOUT
   local screvent,scrinput = terminal.DisplayObject(scrlines,scrkeys,screvents,30000)

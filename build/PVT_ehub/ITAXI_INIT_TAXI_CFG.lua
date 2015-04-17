@@ -2,6 +2,15 @@ function init_taxi_cfg()
   taxicfg.header0,taxicfg.header1,taxicfg.trailer0,taxicfg.trailer1,taxicfg.trailer2,taxicfg.trailer3,taxicfg.abn_no,taxicfg.abn,taxicfg.taxi_no,taxicfg.auth_no,taxicfg.inv,taxicfg.last_inv,taxicfg.batch= 
   terminal.GetJsonValue("iTAXI_CFG","HEADER0","HEADER1","TRAILER0","TRAILER1","TRAILER2","TRAILER3","ABN_NO","ABN","TAXI_NO","AUTH_NO","INV","LAST_INV","BATCH")
   taxicfg.comm,taxicfg.serv_gst,taxicfg.day,taxicfg.month,taxicfg.daily,taxicfg.monthly,taxicfg.day_limit,taxicfg.month_limit,taxicfg.ctls_slimit,taxicfg.h_serv_gst,taxicfg.h_comm =terminal.GetJsonValueInt("iTAXI_CFG","COMM","SERV_GST","DAY","MONTH","DAILY","MONTHLY","DAY_LIMIT","MONTH_LIMIT","CTLS_S_LIMIT","HIRE_SERV_GST","HIRE_COMM")
+  local drivertype = terminal.GetJsonValue("iTAXI_CFG","DRIVERTYPE")
+  if drivertype == "HIRE" then
+	taxicfg.comm = taxicfg.h_comm
+	taxicfg.serv_gst = taxicfg.h_serv_gst
+	if taxicfg.serv_gst==0 and taxicfg.comm==0 then taxicfg.comm = 300;taxicfg.serv_gst = 1100;
+		terminal.SetJsonValue("iTAXI_CFG","HIRE_SERV_GST",taxicfg.serv_gst);terminal.SetJsonValue("iTAXI_CFG","HIRE_COMM",taxicfg.comm)
+	end
+	taxicfg.hire = true
+  end
   taxicfg.header = "\\ggmcabs.bmp" .."\\f\\C" .. taxicfg.header0 .. "\\n" .."\\C" .. taxicfg.header1 .. "\\n"
   local cfgtrailer2 = ( taxicfg.trailer2 == "" and "" or ("\\4\\H\\C" .. taxicfg.trailer2 .. "\\n"))
   local cfgtrailer3 = ( taxicfg.trailer3 == "" and "" or ("\\4\\H\\C" .. taxicfg.trailer3 .. "\\n"))

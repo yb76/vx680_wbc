@@ -43,9 +43,6 @@ function funckeymenu()
 	  return do_obj_txn_finish()
     elseif scrinput == "00200200" then
 	  return do_obj_txn_reset_memory()
-    elseif scrinput == "987654" then
-	  config.no_online = true
-	  return do_obj_txn_finish()
     else return do_obj_check_pswd(scrinput)
     end
   end

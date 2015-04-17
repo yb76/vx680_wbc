@@ -15,11 +15,11 @@ function do_obj_itaxi_pay_do()
     "METER FARE:\\R" .. string.format("$%.2f",taxi.meter/100) .. "\\n" ..
     otherchgstr ..
     "\\f \\R----------\\n" ..
-    "\\4TOTAL FARE(INC GST):\\R" .. string.format( "$%.2f", taxi.subtotal/100)  .. "\\n" ..
+    "\\3TOTAL FARE(INC GST):\\R" .. string.format( "$%.2f", taxi.subtotal/100)  .. "\\n" ..
     "SERVICE FEE:\\R" .. string.format( "$%.2f", taxi.serv_gst*10/100/11)  .. "\\n" ..
     "GST ON SERVICE FEE:\\R" .. string.format( "$%.2f", taxi.serv_gst/100-taxi.serv_gst*10/100/11)  .. "\\n" ..
     "\\f \\R----------\\n" ..
-    "TOTAL:\\R" .. string.format( "$%.2f", (taxi.subtotal+ taxi.serv_gst )/100) .."\\n"
+    "\\fTOTAL:\\R" .. string.format( "$%.2f", (taxi.subtotal+ taxi.serv_gst )/100) .."\\n"
   ecrd.TRACK2 = taxi.track2
   ecrd.CARDNAME = taxi.track2 and taxi.cardname
   ecrd.CTLS = taxi.ctls

@@ -40,7 +40,8 @@ function do_obj_itaxi_abn_no()
   if screvent == "KEY_OK" then
     taxicfg.abn_no = scrinput
     terminal.SetJsonValue("iTAXI_CFG","ABN_NO",taxicfg.abn_no)
-    return do_obj_itaxi_taxi_no()
+    --return do_obj_itaxi_taxi_no()
+	return do_obj_itaxi_select_driver()
   elseif screvent == "KEY_CLR" then
     return do_obj_itaxi_auth_no()
   else
@@ -70,13 +71,14 @@ function do_obj_itaxi_select_driver()
   if taxicfg.h_serv_gst == 0 then taxicfg.h_serv_gst = 1100 end
   local line1 = "TAXI DRIVER"
   local line2 = "HIRE CAR DRIVER"
-  local line1txt = "SERVICE FEE:"..tostring(taxicfg.serv_gst/100.0).."% COMM:"..tostring(taxicfg.comm/100.0).."%"
-  local line2txt = "SERVICE FEE:"..tostring(taxicfg.h_serv_gst/100.0).."% COMM:"..tostring(taxicfg.h_comm/100.0).."%"
+  local line1txt = "SERVICE FEE:"..tostring(taxicfg.serv_gst/100.0).."%"
+  local line2txt = "SERVICE FEE:"..tostring(taxicfg.h_serv_gst/100.0).."%"
   local scrlines = ",THIS,ENTER DRIVER TYPE,1,C;" .. "BUTTONL_1,THIS,"..line1..",P113,C;"..",THIS,"..line1txt..",6,C;".. "BUTTONL_2,THIS,"..line2..",P236,C;"..",THIS,"..line2txt..",12,C;"
   local scrkeys = KEY.CNCL
   local screvent,scrinput = terminal.DisplayObject(scrlines,scrkeys,EVT.TIMEOUT,ScrnTimeout)
   taxicfg.hire = nil
   if screvent == "BUTTONL_1" then
+    terminal.SetJsonValue("iTAXI_CFG","DRIVERTYPE","TAXI")
     return do_obj_itaxi_taxi_no()
   elseif screvent == "BUTTONL_2" then
 	taxicfg.comm = taxicfg.h_comm
@@ -176,7 +178,7 @@ function do_obj_itaxi_pickup()
   if txn_allowed("PRCH") then
       if not taxicfg.pickup_scr then
         local loc0,loc1,loc2,loc3,loc4,loc5 = taxicfg.loc0,taxicfg.loc1,taxicfg.loc2,taxicfg.loc3,taxicfg.loc4,taxicfg.loc5
-        local scrlines = "WIDELBL,THIS,<color_red>PICK UP FROM,-1,C;" .. "BUTTONM_0,THIS,"..loc0..",2,C;" .. "BUTTONM_1,THIS," ..loc1..",4,C;" 
+        local scrlines = "WIDELBL,THIS,PICK UP FROM,-1,C;" .. "BUTTONM_0,THIS,"..loc0..",2,C;" .. "BUTTONM_1,THIS," ..loc1..",4,C;" 
         .. "BUTTONM_2,THIS,"..loc2..",6,C;" .. "BUTTONM_3,THIS,"..loc3..",8,C;" .. "BUTTONM_4,THIS,"..loc4..",10,C;"
         .. "BUTTONM_5,THIS,"..loc5..",12,C;"
         taxicfg.pickup_scr = scrlines
@@ -535,11 +537,11 @@ function do_obj_itaxi_pay_do()
     "METER FARE:\\R" .. string.format("$%.2f",taxi.meter/100) .. "\\n" ..
     otherchgstr ..
     "\\f \\R----------\\n" ..
-    "\\4TOTAL FARE(INC GST):\\R" .. string.format( "$%.2f", taxi.subtotal/100)  .. "\\n" ..
+    "\\3TOTAL FARE(INC GST):\\R" .. string.format( "$%.2f", taxi.subtotal/100)  .. "\\n" ..
     "SERVICE FEE:\\R" .. string.format( "$%.2f", taxi.serv_gst*10/100/11)  .. "\\n" ..
     "GST ON SERVICE FEE:\\R" .. string.format( "$%.2f", taxi.serv_gst/100-taxi.serv_gst*10/100/11)  .. "\\n" ..
     "\\f \\R----------\\n" ..
-    "TOTAL:\\R" .. string.format( "$%.2f", (taxi.subtotal+ taxi.serv_gst )/100) .."\\n"
+    "\\fTOTAL:\\R" .. string.format( "$%.2f", (taxi.subtotal+ taxi.serv_gst )/100) .."\\n"
   ecrd.TRACK2 = taxi.track2
   ecrd.CARDNAME = taxi.track2 and taxi.cardname
   ecrd.CTLS = taxi.ctls
@@ -583,7 +585,7 @@ function do_obj_itaxi_serv_gst ()
   if screvent == "KEY_OK" and taxicfg.serv_gst ~= tonumber(scrinput) then
     taxicfg.serv_gst = tonumber(scrinput) or 0
     if taxicfg.hire then taxicfg.h_serv_gst=taxicfg.serv_gst; terminal.SetJsonValue("iTAXI_CFG","HIRE_SERV_GST",scrinput)
-	else terminal.SetJsonValue("iTAXI_CFG","SERV_GST",scrinput) end
+    else terminal.SetJsonValue("iTAXI_CFG","SERV_GST",scrinput) end
   end
   return do_obj_itaxi_smenu()
 end
@@ -1061,6 +1063,15 @@ function init_taxi_cfg()
   taxicfg.header0,taxicfg.header1,taxicfg.trailer0,taxicfg.trailer1,taxicfg.trailer2,taxicfg.trailer3,taxicfg.abn_no,taxicfg.abn,taxicfg.taxi_no,taxicfg.auth_no,taxicfg.inv,taxicfg.last_inv,taxicfg.batch= 
   terminal.GetJsonValue("iTAXI_CFG","HEADER0","HEADER1","TRAILER0","TRAILER1","TRAILER2","TRAILER3","ABN_NO","ABN","TAXI_NO","AUTH_NO","INV","LAST_INV","BATCH")
   taxicfg.comm,taxicfg.serv_gst,taxicfg.day,taxicfg.month,taxicfg.daily,taxicfg.monthly,taxicfg.day_limit,taxicfg.month_limit,taxicfg.ctls_slimit,taxicfg.h_serv_gst,taxicfg.h_comm =terminal.GetJsonValueInt("iTAXI_CFG","COMM","SERV_GST","DAY","MONTH","DAILY","MONTHLY","DAY_LIMIT","MONTH_LIMIT","CTLS_S_LIMIT","HIRE_SERV_GST","HIRE_COMM")
+  local drivertype = terminal.GetJsonValue("iTAXI_CFG","DRIVERTYPE")
+  if drivertype == "HIRE" then
+	taxicfg.comm = taxicfg.h_comm
+	taxicfg.serv_gst = taxicfg.h_serv_gst
+	if taxicfg.serv_gst==0 and taxicfg.comm==0 then taxicfg.comm = 300;taxicfg.serv_gst = 1100;
+		terminal.SetJsonValue("iTAXI_CFG","HIRE_SERV_GST",taxicfg.serv_gst);terminal.SetJsonValue("iTAXI_CFG","HIRE_COMM",taxicfg.comm)
+	end
+	taxicfg.hire = true
+  end
   taxicfg.header = "\\ggmcabs.bmp" .."\\f\\C" .. taxicfg.header0 .. "\\n" .."\\C" .. taxicfg.header1 .. "\\n"
   local cfgtrailer2 = ( taxicfg.trailer2 == "" and "" or ("\\4\\H\\C" .. taxicfg.trailer2 .. "\\n"))
   local cfgtrailer3 = ( taxicfg.trailer3 == "" and "" or ("\\4\\H\\C" .. taxicfg.trailer3 .. "\\n"))
