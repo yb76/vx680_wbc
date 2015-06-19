@@ -1,0 +1,216 @@
+Version   "04/02/15"
+target    390
+header    <EST.hdr>
+#include <..\include\emvsizes.h>
+#include <..\include\gdEST.h>
+
+data EST
+{
+/*  Record 1 - Visa */
+(0,                             /* Not Used */
+"Visa",                         /* SchemeLabel */
+"A000000003",                   /* RID */
+"",                             /* Not Used */
+07,                             /* PublicKeyIndex1 */
+"A000000003.07",                /* CAPKFile1 */
+"311240",                       /* CAPKExpDate1 */
+08,                             /* PublicKeyIndex2 */
+"A000000003.08",                /* CAPKFile2 */
+"311240",                       /* CAPKExpDate2 */
+09,                             /* PublicKeyIndex3 */
+"A000000003.09",                /* CAPKFile3 */
+"311240",                       /* CAPKExpDate3 */
+256,                            /* PublicKeyIndex4 */
+"",                             /* CAPKFile4 */
+"",                             /* CAPKExpDate4 */
+256,                            /* PublicKeyIndex5 */
+"",                             /* CAPKFile5 */
+"",                             /* CAPKExpDate5 */
+256,                            /* PublicKeyIndex6 */
+"",                             /* CAPKFile6 */
+"",                             /* CAPKExpDate6 */
+256,                            /* PublicKeyIndex7 */
+"",                             /* CAPKFile7 */
+"",                             /* CAPKExpDate7 */
+256,                            /* PublicKeyIndex8 */
+"",                             /* CAPKFile8 */
+"",                             /* CAPKExpDate8 */
+256,                            /* PublicKeyIndex9 */
+"",                             /* CAPKFile9 */
+"",                             /* CAPKExpDate9 */
+256,                            /* PublicKeyIndex10 */
+"",                             /* CAPKFile10 */
+"",                             /* CAPKExpDate10 */
+256,                            /* PublicKeyIndex11 */
+"",                             /* CAPKFile11 */
+"",                             /* CAPKExpDate11 */
+256,                            /* PublicKeyIndex12 */
+"",                             /* CAPKFile12 */
+"",                             /* CAPKExpDate12 */
+256,                            /* PublicKeyIndex13 */
+"",                             /* CAPKFile13 */
+"",                             /* CAPKExpDate13 */
+256,                            /* PublicKeyIndex14 */
+"",                             /* CAPKFile14 */
+"",                             /* CAPKExpDate14 */
+256,                            /* PublicKeyIndex15 */
+"",                             /* CAPKFile15 */
+"",                             /* CAPKExpDate15 */
+"A0000000031010",               /* SupportedAID1 */
+2,                              /* PartialNameAllowedFlag1 */
+"008C",                         /* TermAVN1 */
+"008A",                         /* SecondTermAVN1 */
+"VISA",                         /* Recommended App name */
+"A0000000032010",               /* SupportedAID2 */
+2,                              /* PartialNameAllowedFlag2 */
+"008C",                         /* TermAVN2 */
+"0084",                         /* SecondTermAVN2 */
+"VISA Electron",                /* Recommended App name */
+"",                             /* SupportedAID3 */
+1,                              /* PartialNameAllowedFlag3 */
+"",                             /* TermAVN3 */
+"",                             /* SecondTermAVN3 */
+"",                             /* Recommended App name3 */
+"",                             /* SupportedAID4 */
+1,                              /* PartialNameAllowedFlag4 */
+"",                             /* TermAVN4 */
+"",                             /* SecondTermAVN4 */
+"",                             /* Recommended App name4 */
+"",                             /* SupportedAID5 */
+1,                              /* PartialNameAllowedFlag5 */
+"",                             /* TermAVN5 */
+"",                             /* SecondTermAVN5 */
+"",                             /* Recommended App name */
+"",                             /* SupportedAID6 */
+1,                              /* PartialNameAllowedFlag6 */
+"",                             /* TermAVN6 */
+"",                             /* SecondTermAVN6 */
+"",                             /* Recommended App name */
+"",                             /* SupportedAID7 */
+1,                              /* PartialNameAllowedFlag7 */
+"",                             /* TermAVN7 */
+"",                             /* SecondTermAVN7 */
+"",                             /* Recommended App name */
+"",                             /* SupportedAID8 */
+1,                              /* PartialNameAllowedFlag8 */
+"",                             /* TermAVN8 */
+"",                             /* SecondTermAVN8 */
+"",                             /* Recommended App name */
+"",                             /* SupportedAID9 */
+1,                              /* PartialNameAllowedFlag9 */
+"",                             /* TermAVN9 */
+"",                             /* SecondTermAVN9 */
+"",                             /* Recommended App name */
+"",                             /* SupportedAID10 */
+1,                              /* PartialNameAllowedFlag10 */
+"",                             /* TermAVN10 */
+"",                             /* SecondTermAVN10 */
+"",                             /* Recommended App name */
+1,                              /* EMVTableRecord */
+"A000000003.CSN")
+
+
+/*  Record 2 - Mastercard */
+(0,                             /* Not Used */
+"MASTERCARD",                   /* SchemeLabel */
+"A000000004",                   /* RID */
+"",                             /* Not Used */
+04,                             /* "CAPK Index 1" */
+"A000000004.04",                /* "CAPK File 1" */
+"311240",                       /* "CAPK Expiry Date 1" */
+05,                             /* "CAPK Index 2" */
+"A000000004.05",                /* "CAPK File 2" */
+"311240",                       /* "CAPK Expiry Date 2" */
+06,                             /* "CAPK Index 3" */
+"A000000004.06",                /* "CAPK File 3" */
+"311240",                       /* "CAPK Expiry Date 3" */
+256,                            /* PublicKeyIndex4 */
+"",                             /* CAPKFile4 */
+"",                             /* CAPKExpDate4 */
+256,                            /* PublicKeyIndex5 */
+"",                             /* CAPKFile5 */
+"",                             /* CAPKExpDate5 */
+256,                            /* PublicKeyIndex6 */
+"",                             /* CAPKFile6 */
+"",                             /* CAPKExpDate6 */
+256,                            /* PublicKeyIndex7 */
+"",                             /* CAPKFile7 */
+"",                             /* CAPKExpDate7 */
+256,                            /* PublicKeyIndex8 */
+"",                             /* CAPKFile8 */
+"",                             /* CAPKExpDate8 */
+256,                            /* PublicKeyIndex9 */
+"",                             /* CAPKFile9 */
+"",                             /* CAPKExpDate9 */
+256,                            /* PublicKeyIndex10 */
+"",                             /* CAPKFile10 */
+"",                             /* CAPKExpDate10 */
+256,                            /* PublicKeyIndex11 */
+"",                             /* CAPKFile11 */
+"",                             /* CAPKExpDate11 */
+256,                            /* PublicKeyIndex12 */
+"",                             /* CAPKFile12 */
+"",                             /* CAPKExpDate12 */
+256,                            /* PublicKeyIndex13 */
+"",                             /* CAPKFile13 */
+"",                             /* CAPKExpDate13 */
+256,                            /* PublicKeyIndex14 */
+"",                             /* CAPKFile14 */
+"",                             /* CAPKExpDate14 */
+256,                            /* PublicKeyIndex15 */
+"",                             /* CAPKFile15 */
+"",                             /* CAPKExpDate15 */
+"A0000000041010",               /* "Supported AID 1"    */
+2,                              /* "Partial Name Allowed 1" */ 
+"0002",                         /* "Term AVN 1" */
+"0002",                         /* "2nd Term AVN 1" */
+"MasterCard",                   /* Recommended App name */
+"",                             /* "Supported AID 2"    */ 
+1,                              /* "Partial Name Allowed 2" */ 
+"",                             /* "Term AVN 2" */
+"",                             /* "2nd Term AVN 2" */
+"",                             /* Recommended App name */
+"",                             /* "Supported AID 3"    */ 
+1,                              /* "Partial Name Allowed 3" */
+"",                             /* "Term AVN 3" */
+"",	                            /* "2nd Term AVN 3" */
+"",                             /* Recommended App name */
+"",                             /* "Supported AID 4"    */ 
+1,                              /* "Partial Name Allowed 4" */
+"",                             /* "Term AVN 4" */
+"",                              /* "2nd Term AVN 4" */
+"",                             /* Recommended App name */
+"",                             /* SupportedAID5 */
+1,                              /* PartialNameAllowedFlag5 */
+"",                             /* TermAVN5 */
+"",                             /* SecondTermAVN5 */
+"",                             /* Recommended App name */
+"",                             /* SupportedAID6 */
+1,                              /* PartialNameAllowedFlag6 */
+"",                             /* TermAVN6 */
+"",                             /* SecondTermAVN6 */
+"",                             /* Recommended App name */
+"",                             /* SupportedAID7 */
+1,                              /* PartialNameAllowedFlag7 */
+"",                             /* TermAVN7 */
+"",                             /* SecondTermAVN7 */
+"",                             /* Recommended App name */
+"",                             /* SupportedAID8 */
+1,                              /* PartialNameAllowedFlag8 */
+"",                             /* TermAVN8 */
+"",                             /* SecondTermAVN8 */
+"",                             /* Recommended App name */
+"",                             /* SupportedAID9 */
+1,                              /* PartialNameAllowedFlag9 */
+"",                             /* TermAVN9 */
+"",                             /* SecondTermAVN9 */
+"",                             /* Recommended App name */
+"",                             /* SupportedAID10 */
+1,                              /* PartialNameAllowedFlag10 */
+"",                             /* TermAVN10 */
+"",                             /* SecondTermAVN10 */
+"",                             /* Recommended App name */
+2,                              /* EMVTableRecord */
+"A000000004.CSN")
+
+}
